@@ -37,6 +37,13 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "271801c8-c49c-4008-8b65-41dbc8d8704a"
+      }
+    },
+    "owner": "harshana_47"
   }
 }
