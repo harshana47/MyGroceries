@@ -14,7 +14,7 @@ export default function Login() {
   async function handleLogin() {
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      router.replace("/"); // after login redirect to home
+      router.replace("/home"); // after login redirect to dashboard
     } catch (error: any) {
       Alert.alert("Login Error", error.message);
     }
