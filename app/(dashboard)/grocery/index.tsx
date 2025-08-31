@@ -28,7 +28,7 @@ const GroceryListScreen = () => {
   useEffect(() => {
     showLoader();
     const unsub = onSnapshot(
-      groceriesRef,
+      groceriesRef(),
       (snap) => {
         const items = snap.docs.map((d) => ({
           id: d.id,
@@ -84,7 +84,7 @@ const GroceryListScreen = () => {
       setGroceries([]);
       setCompletedIds([]);
       Alert.alert("Success", "All groceries moved to history!");
-      router.push("/home"); // Navigate to home after finishing all
+      router.push("/home");
     } catch (err) {
       console.error("Finish all failed:", err);
       Alert.alert("Error", "Failed to finish all groceries.");

@@ -11,7 +11,7 @@ const HistoryScreen = () => {
   const [expandedDates, setExpandedDates] = useState<string[]>([]);
 
   useEffect(() => {
-    const unsub = onSnapshot(historyRef, (snap) => {
+    const unsub = onSnapshot(historyRef(), (snap) => {
       const items = snap.docs.map((d) => ({
         id: d.id,
         ...d.data(),
