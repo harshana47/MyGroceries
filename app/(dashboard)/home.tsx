@@ -31,7 +31,7 @@ export default function Home() {
         </TouchableOpacity>
 
         <TouchableOpacity
-          onPress={() => router.push("/map")}
+          onPress={() => router.push("maps/map")}
           className="flex-1 bg-blue-600 mx-2 rounded-2xl p-6 justify-center items-center shadow-md"
         >
           <MaterialIcons name="map" size={40} color="white" />

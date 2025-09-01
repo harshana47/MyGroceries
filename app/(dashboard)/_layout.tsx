@@ -5,8 +5,8 @@ import React from "react";
 const tabs = [
   { name: "home", label: "Home", icon: "home-filled" },
   { name: "grocery", label: "Grocery", icon: "shopping-cart" },
-  { name: "map", label: "Map", icon: "map" },
-  { name: "history", label: "History", icon: "history" },
+  { name: "maps/map", label: "Map", icon: "map" },
+  { name: "history/index", label: "History", icon: "history" },
   { name: "profile", label: "Profile", icon: "person" },
 ] as const;
 
