@@ -1,9 +1,34 @@
+import { auth, db } from "@/firebase";
 import { MaterialIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import React from "react";
-import { Text, TouchableOpacity, View } from "react-native";
+import { doc, getDoc } from "firebase/firestore";
+import React, { useEffect, useState } from "react";
+import { Image, Text, TouchableOpacity, View } from "react-native";
 
 export default function Home() {
+  const [photoURL, setPhotoURL] = useState<string | null>(null);
+  const user = auth.currentUser;
+
+  useEffect(() => {
+    const fetchProfilePhoto = async () => {
+      if (!user) return;
+      try {
+        const docRef = doc(db, "users", user.uid);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          if (data?.photoURL) setPhotoURL(data.photoURL);
+        } else if (user.photoURL) {
+          // fallback to Firebase Auth photoURL
+          setPhotoURL(user.photoURL);
+        }
+      } catch (err) {
+        console.error("Failed to fetch profile photo:", err);
+      }
+    };
+    fetchProfilePhoto();
+  }, [user]);
+
   return (
     <View className="flex-1 bg-white px-6 pt-14">
       {/* Header */}
@@ -13,10 +38,28 @@ export default function Home() {
         </Text>
 
         <TouchableOpacity
-          onPress={() => router.push("/profile")}
-          className="p-2 bg-green-100 rounded-full"
+          onPress={() => router.push("profiles/profile")}
+          className="p-1"
         >
-          <MaterialIcons name="person" size={28} color="#16a34a" />
+          {photoURL ? (
+            <Image
+              source={{ uri: photoURL }}
+              style={{ width: 36, height: 36, borderRadius: 18 }}
+            />
+          ) : (
+            <View
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 18,
+                backgroundColor: "#d1fae5",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <Text style={{ color: "#059669", fontWeight: "bold" }}>U</Text>
+            </View>
+          )}
         </TouchableOpacity>
       </View>
 

@@ -2,6 +2,8 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
+import { getStorage } from "firebase/storage"; // 👈 add this
+
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
@@ -10,7 +12,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyCmrOGVHUFrcdsLsO_CyF5T3uAUudFGxB8",
   authDomain: "my-grocery-9fbf7.firebaseapp.com",
   projectId: "my-grocery-9fbf7",
-  storageBucket: "my-grocery-9fbf7.firebasestorage.app",
+  storageBucket: "gs://my-grocery-9fbf7.firebasestorage.app",
   messagingSenderId: "586289384397",
   appId: "1:586289384397:web:e318129896d5852ce95284"
 };
@@ -20,3 +22,4 @@ export const app = initializeApp(firebaseConfig);
 
 export const auth = getAuth(app)
 export const db = getFirestore(app)
+export const storage = getStorage(app); // 👈 export storage
