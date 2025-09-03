@@ -1,7 +1,19 @@
+// app/login.tsx
 import { router } from "expo-router";
 import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
+import { LogIn } from "lucide-react-native";
 import React, { useState } from "react";
-import { Alert, Text, TextInput, TouchableOpacity, View } from "react-native";
+import {
+  Alert,
+  ImageBackground,
+  KeyboardAvoidingView,
+  Platform,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { app } from "../../firebase"; // adjust if your firebase.ts exports app
 
 const auth = getAuth(app);
@@ -20,71 +32,136 @@ export default function Login() {
   }
 
   return (
-    <View style={{ flex: 1, justifyContent: "center", padding: 20 }}>
-      <Text style={{ fontSize: 28, fontWeight: "bold", marginBottom: 20 }}>
-        Login
-      </Text>
-
-      <TextInput
-        placeholder="Email"
-        value={email}
-        onChangeText={setEmail}
-        autoCapitalize="none"
+    // <ImageBackground
+    //   source={require("../../assets/images/man3.jpg")}
+    //   resizeMode="cover"
+    //   style={{ flex: 1 }}
+    // >
+    //   <KeyboardAvoidingView
+    //     behavior={Platform.OS === "ios" ? "padding" : undefined}
+    //     className="flex-1 px-6 py-10 justify-between"
+    //   >
+    //     {/* Header */}
+    //     <View className="items-center mt-12">
+    //       <Text className="text-white text-5xl mt-4 font-extrabold">Login</Text>
+    //       <Text className="text-white mt-4 text-base">
+    //         Welcome back 👋 Sign in to continue
+    //       </Text>
+    //     </View>
+    <ImageBackground
+      source={require("../../assets/images/shop2.jpg")}
+      resizeMode="cover"
+      style={{ flex: 1 }}
+    >
+      {/* Add a dark overlay */}
+      <View
         style={{
-          borderWidth: 1,
-          marginBottom: 12,
-          padding: 10,
-          borderRadius: 6,
+          ...StyleSheet.absoluteFillObject,
+          backgroundColor: "rgba(0,0,0,0.45)",
+          zIndex: 1,
         }}
       />
-      <TextInput
-        placeholder="Password"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-        style={{
-          borderWidth: 1,
-          marginBottom: 12,
-          padding: 10,
-          borderRadius: 6,
-        }}
-      />
-
-      <TouchableOpacity
-        onPress={handleLogin}
-        style={{ backgroundColor: "#1f8ef1", padding: 14, borderRadius: 6 }}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        className="flex-1 px-6 py-10 justify-between"
+        style={{ zIndex: 2 }}
       >
-        <Text
-          style={{ color: "white", textAlign: "center", fontWeight: "bold" }}
+        {/* Header */}
+        <View className="items-center mt-12">
+          <Text className="text-white text-5xl mt-4 font-extrabold">Login</Text>
+          <Text className="text-white mt-4 text-base">
+            Welcome back 👋 Sign in to continue
+          </Text>
+        </View>
+
+        {/* Main Card */}
+        <View
+          style={styles.glassCard}
+          className="rounded-3xl mt-1 p-8 mb-8 shadow-lg"
         >
-          Login
-        </Text>
-      </TouchableOpacity>
+          {/* Email */}
+          <Text className="text-white font-semibold mb-2 text-lg">Email</Text>
+          <TextInput
+            placeholder="Enter your email"
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
+            keyboardType="email-address"
+            style={styles.inputClassy}
+            className="mb-4"
+          />
 
-      {/* Forgot Password Link */}
-      <TouchableOpacity
-        onPress={() => router.push("../(auth)/forgotPassword")}
-        style={{ marginTop: 16 }}
-      >
-        <Text
-          style={{
-            color: "#ef4444",
-            textAlign: "center",
-            textDecorationLine: "underline",
-          }}
-        >
-          Forgot Password?
-        </Text>
-      </TouchableOpacity>
+          {/* Password */}
+          <Text className="text-white font-semibold mb-2 text-lg">
+            Password
+          </Text>
+          <TextInput
+            placeholder="Enter your password"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            style={styles.inputClassy}
+            className="mb-2"
+          />
 
-      <TouchableOpacity
-        onPress={() => router.push("../signup")}
-        style={{ marginTop: 20 }}
-      >
-        <Text style={{ color: "#1f8ef1", textAlign: "center" }}>
-          Don’t have an account? Sign up
-        </Text>
-      </TouchableOpacity>
-    </View>
+          {/* Forgot password */}
+          <TouchableOpacity
+            onPress={() => router.push("../(auth)/forgotPassword")}
+            className="mb-6 mt-2"
+          >
+            <Text className="text-black text-right font-semibold underline">
+              Forgot Password?
+            </Text>
+          </TouchableOpacity>
+
+          {/* Login button */}
+          <TouchableOpacity
+            onPress={handleLogin}
+            className="bg-black py-4 rounded-2xl items-center flex-row justify-center space-x-2"
+          >
+            <LogIn size={22} color="white" />
+            <Text className="text-white font-semibold text-lg ml-2">Login</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Footer */}
+        <View className="items-center mb-8">
+          <TouchableOpacity onPress={() => router.push("../signup")}>
+            <Text className="text-white font-medium">
+              Don’t have an account?{" "}
+              <Text className="text-blue-600 font-semibold">Sign up</Text>
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
+    </ImageBackground>
   );
 }
+
+const styles = StyleSheet.create({
+  glassCard: {
+    backgroundColor: "rgba(255,255,255,0.25)",
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.4)",
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 20,
+  },
+  inputClassy: {
+    backgroundColor: "rgba(255,255,255,0.85)", // more glassy
+    borderWidth: 1.5,
+    borderColor: "black",
+    borderRadius: 18,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 16,
+    color: "#fff", // white text looks better on glass
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+  },
+});
