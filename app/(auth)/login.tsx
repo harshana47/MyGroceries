@@ -1,4 +1,3 @@
-// app/auth/login.tsx
 import { router } from "expo-router";
 import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
 import React, { useState } from "react";
@@ -59,6 +58,22 @@ export default function Login() {
           style={{ color: "white", textAlign: "center", fontWeight: "bold" }}
         >
           Login
+        </Text>
+      </TouchableOpacity>
+
+      {/* Forgot Password Link */}
+      <TouchableOpacity
+        onPress={() => router.push("../(auth)/forgotPassword")}
+        style={{ marginTop: 16 }}
+      >
+        <Text
+          style={{
+            color: "#ef4444",
+            textAlign: "center",
+            textDecorationLine: "underline",
+          }}
+        >
+          Forgot Password?
         </Text>
       </TouchableOpacity>
 

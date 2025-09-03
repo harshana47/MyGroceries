@@ -4,12 +4,7 @@ import { auth, db, storage } from "@/firebase";
 import * as ImagePicker from "expo-image-picker";
 import * as MediaLibrary from "expo-media-library";
 import { useRouter } from "expo-router";
-import {
-  deleteUser,
-  signOut,
-  updatePassword,
-  updateProfile,
-} from "firebase/auth";
+import { deleteUser, signOut, updateProfile } from "firebase/auth";
 import { deleteDoc, doc, getDoc, setDoc } from "firebase/firestore";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import { useEffect, useState } from "react";
@@ -19,14 +14,12 @@ import {
   Image,
   ScrollView,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 
 const ProfileScreen = () => {
   const [photoURL, setPhotoURL] = useState<string>("");
-  const [newPassword, setNewPassword] = useState("");
   const [uploading, setUploading] = useState(false);
   const router = useRouter();
   const { showLoader, hideLoader } = useLoader();
@@ -86,14 +79,12 @@ const ProfileScreen = () => {
       await uploadBytes(fileRef, blob);
       const downloadURL = await getDownloadURL(fileRef);
 
-      // Save URL to Firestore
       await setDoc(
         doc(db, "users", user.uid),
         { photoURL: downloadURL },
         { merge: true }
       );
 
-      // Update Firebase Auth profile
       await updateProfile(user, { photoURL: downloadURL });
       setPhotoURL(downloadURL);
       Alert.alert("Success", "Profile picture updated!");
@@ -102,22 +93,6 @@ const ProfileScreen = () => {
       Alert.alert("Error", "Failed to upload image.");
     } finally {
       setUploading(false);
-    }
-  };
-
-  // Change password
-  const handleChangePassword = async () => {
-    if (!user || !newPassword) return;
-    try {
-      showLoader();
-      await updatePassword(user, newPassword);
-      Alert.alert("Success", "Password updated!");
-      setNewPassword("");
-    } catch (err: any) {
-      console.error("Password change failed:", err);
-      Alert.alert("Error", err.message || "Failed to change password.");
-    } finally {
-      hideLoader();
     }
   };
 
@@ -180,29 +155,13 @@ const ProfileScreen = () => {
         </TouchableOpacity>
 
         {/* Email (readonly) */}
-        <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 12 }}>
+        <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 20 }}>
           {user.email}
         </Text>
 
-        {/* Change Password */}
-        <TextInput
-          value={newPassword}
-          onChangeText={setNewPassword}
-          placeholder="Enter new password"
-          secureTextEntry
-          style={{
-            width: "100%",
-            backgroundColor: "#fff",
-            padding: 12,
-            borderRadius: 12,
-            borderWidth: 1,
-            borderColor: "#e5e7eb",
-            marginBottom: 12,
-          }}
-        />
+        {/* Reset Password Button */}
         <TouchableOpacity
-          onPress={handleChangePassword}
-          disabled={uploading || !newPassword}
+          onPress={() => router.push("(auth)/forgotPassword")}
           style={{
             backgroundColor: "#3b82f6",
             width: "100%",
@@ -214,7 +173,7 @@ const ProfileScreen = () => {
           <Text
             style={{ color: "#fff", textAlign: "center", fontWeight: "600" }}
           >
-            Change Password
+            Reset Password
           </Text>
         </TouchableOpacity>
 
