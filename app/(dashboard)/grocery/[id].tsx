@@ -7,8 +7,17 @@ import {
   updateGrocery,
 } from "@/services/groceryService";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { ShoppingCart } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
-import { Alert, Text, TextInput, TouchableOpacity, View } from "react-native";
+import {
+  Alert,
+  ImageBackground,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 const GroceryFormScreen = () => {
   const { id } = useLocalSearchParams<{ id?: string }>();
@@ -64,35 +73,82 @@ const GroceryFormScreen = () => {
   };
 
   return (
-    <View className="flex-1 bg-gray-50 p-5">
-      <Text className="text-2xl font-bold text-gray-800 mb-4">
-        {isNew ? "Add Grocery" : "Edit Grocery"}
-      </Text>
-
-      <TextInput
-        placeholder="Name"
-        className="border border-gray-300 bg-white p-3 my-2 rounded-xl"
-        value={name}
-        onChangeText={setName}
-      />
-      <TextInput
-        placeholder="Quantity"
-        keyboardType="numeric"
-        className="border border-gray-300 bg-white p-3 my-2 rounded-xl"
-        value={quantity}
-        onChangeText={setQuantity}
+    <ImageBackground
+      source={require("../../../assets/images/man3.jpg")}
+      style={{ flex: 1 }}
+      resizeMode="cover"
+    >
+      {/* Overlay */}
+      <View
+        style={{
+          ...StyleSheet.absoluteFillObject,
+          backgroundColor: "rgba(0,0,0,0.35)",
+        }}
       />
 
-      <TouchableOpacity
-        className="bg-blue-600 rounded-xl px-6 py-3 my-4"
-        onPress={handleSubmit}
-      >
-        <Text className="text-lg text-white font-semibold text-center">
-          {isNew ? "Add Grocery" : "Update Grocery"}
-        </Text>
-      </TouchableOpacity>
-    </View>
+      <View className="flex-1 justify-center items-center px-6">
+        {/* Card */}
+        <View style={styles.card} className="w-full p-6 rounded-2xl">
+          {/* Icon + Header */}
+          <View className="flex-row items-center mb-6">
+            <View style={styles.iconCircle}>
+              <ShoppingCart size={26} color="#fff" />
+            </View>
+            <Text className="text-2xl font-extrabold text-gray-800 ml-3">
+              {isNew ? "Add Grocery" : "Edit Grocery"}
+            </Text>
+          </View>
+
+          {/* Inputs */}
+          <TextInput
+            placeholder="Grocery Name"
+            placeholderTextColor="#888"
+            className="bg-white border border-gray-300 p-3 my-2 rounded-xl text-gray-900"
+            value={name}
+            onChangeText={setName}
+          />
+          <TextInput
+            placeholder="Quantity"
+            placeholderTextColor="#888"
+            keyboardType="numeric"
+            className="bg-white border border-gray-300 p-3 my-2 rounded-xl text-gray-900"
+            value={quantity}
+            onChangeText={setQuantity}
+          />
+
+          {/* Submit */}
+          <TouchableOpacity
+            style={styles.submitBtn}
+            className="rounded-xl px-6 py-4 my-4"
+            onPress={handleSubmit}
+          >
+            <Text className="text-lg text-white font-semibold text-center">
+              {isNew ? "Add Grocery" : "Update Grocery"}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </ImageBackground>
   );
 };
+
+const styles = StyleSheet.create({
+  card: {
+    backgroundColor: "rgba(255,255,255,0.45)",
+    borderRadius: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+  },
+  iconCircle: {
+    backgroundColor: "#000000", // black theme for groceries
+    padding: 10,
+    borderRadius: 10,
+  },
+  submitBtn: {
+    backgroundColor: "#000000", // black button
+  },
+});
 
 export default GroceryFormScreen;

@@ -8,6 +8,7 @@ const tabs = [
   { name: "maps/map", label: "Map", icon: "map" },
   { name: "history/index", label: "History", icon: "history" },
   { name: "profiles/profile", label: "Profile", icon: "person" },
+  { name: "support/index", label: "Support", icon: "support" },
 ] as const;
 
 export default function DashboardLayout() {

@@ -12,8 +12,10 @@ import { onSnapshot } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import {
   Alert,
+  ImageBackground,
   Pressable,
   ScrollView,
+  StyleSheet,
   Text,
   TouchableOpacity,
   View,
@@ -33,7 +35,7 @@ const GroceryListScreen = () => {
         const items = snap.docs.map((d) => ({
           id: d.id,
           ...d.data(),
-          completed: false, // track completion locally
+          completed: false,
         })) as Grocery[];
         setGroceries(items);
         hideLoader();
@@ -98,71 +100,94 @@ const GroceryListScreen = () => {
     : 0;
 
   return (
-    <View className="flex-1 bg-gray-50">
-      <View className="p-5 flex-row justify-between items-center bg-white shadow">
-        <Text className="text-2xl font-bold text-gray-800">Groceries</Text>
+    <ImageBackground
+      source={require("../../../assets/images/shop.jpg")}
+      style={{ flex: 1 }}
+      resizeMode="cover"
+    >
+      {/* Dark overlay */}
+      <View
+        style={{
+          ...StyleSheet.absoluteFillObject,
+          backgroundColor: "rgba(0,0,0,0.75)",
+        }}
+      />
+
+      {/* Header */}
+      <View className="p-5 flex-row justify-between items-center z-10">
+        <Text className="text-3xl font-extrabold text-white">Groceries</Text>
       </View>
 
-      <ScrollView className="mt-3 px-4">
+      {/* Grocery List */}
+      <ScrollView className="mt-3 px-4 z-10">
         {groceries.map((item) => (
           <View
             key={item.id}
-            className={`p-4 mb-3 rounded-2xl shadow-sm border flex-row justify-between items-center ${
-              item.completed ? "bg-green-100" : "bg-white"
+            style={styles.glassCard}
+            className={`p-4 mb-3 rounded-2xl shadow-lg ${
+              item.completed ? "border-green-500" : "border-gray-200"
             }`}
           >
-            <View>
-              <Text className="text-lg font-semibold text-gray-800">
-                {item.name}
-              </Text>
-              <Text className="text-sm text-gray-500">
-                Qty: {item.quantity}
-              </Text>
-            </View>
-
-            <View className="flex-row items-center space-x-2">
-              <TouchableOpacity
-                className="bg-yellow-400 px-3 py-1 rounded-lg"
-                onPress={() => router.push(`/(dashboard)/grocery/${item.id}`)}
-              >
-                <Text className="text-gray-800">Edit</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                className={`px-3 py-1 rounded-lg ${
-                  item.completed ? "bg-green-500" : "bg-blue-500"
-                }`}
-                onPress={() => toggleComplete(item.id!)}
-              >
-                <Text className="text-white">
-                  {item.completed ? "Completed" : "Complete"}
+            <View className="flex-row justify-between items-center">
+              <View>
+                <Text className="text-lg font-semibold text-white">
+                  {item.name}
                 </Text>
-              </TouchableOpacity>
+                <Text className="text-sm text-gray-200">
+                  Qty: {item.quantity}
+                </Text>
+              </View>
 
-              <TouchableOpacity
-                className="bg-red-500 px-3 py-1 rounded-lg"
-                onPress={() => confirmDelete(item.id!)}
-              >
-                <Text className="text-white">Delete</Text>
-              </TouchableOpacity>
+              <View className="flex-row items-center">
+                {/* Edit Button */}
+                <TouchableOpacity
+                  className="p-2 rounded-xl mr-2 bg-white/20"
+                  onPress={() => router.push(`/(dashboard)/grocery/${item.id}`)}
+                >
+                  <MaterialIcons name="edit" size={20} color="#fff" />
+                </TouchableOpacity>
+
+                {/* Delete Button */}
+                <TouchableOpacity
+                  className="p-2 rounded-xl mr-4 bg-white/20"
+                  onPress={() => confirmDelete(item.id!)}
+                >
+                  <MaterialIcons name="delete" size={20} color="#fff" />
+                </TouchableOpacity>
+
+                {/* Complete/Done Button */}
+                <TouchableOpacity
+                  className={`px-3 py-2 rounded-xl flex-row items-center ${
+                    item.completed ? "bg-green-600" : "bg-blue-600"
+                  }`}
+                  onPress={() => toggleComplete(item.id!)}
+                  style={{ marginLeft: 12 }}
+                >
+                  <MaterialIcons name="check-circle" size={20} color="#fff" />
+                  <Text className="ml-1 text-white font-semibold">
+                    {item.completed ? "Done" : "Complete"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
         ))}
       </ScrollView>
 
-      {/* Finish All Button */}
-      <View className="p-4 bg-white">
+      {/* Bottom Section */}
+      <View className="p-4 z-10">
         <TouchableOpacity
-          className="bg-purple-600 py-3 rounded-xl mb-2"
+          className="bg-purple-700 py-4 rounded-2xl mb-3 flex-row justify-center items-center"
           onPress={handleFinishAll}
         >
-          <Text className="text-center text-white font-semibold text-lg">
+          <MaterialIcons name="done-all" size={22} color="#fff" />
+          <Text className="ml-2 text-white font-semibold text-lg">
             Finish All
           </Text>
         </TouchableOpacity>
 
         {/* Progress Bar */}
-        <View className="h-4 bg-gray-300 rounded-full">
+        <View className="h-4 bg-gray-400 rounded-full overflow-hidden">
           <View
             className="h-4 bg-green-500 rounded-full"
             style={{ width: `${progress}%` }}
@@ -171,16 +196,31 @@ const GroceryListScreen = () => {
       </View>
 
       {/* Floating Add Button */}
-      <View className="absolute bottom-24 right-6">
+      <View className="absolute bottom-24 right-6 z-20">
         <Pressable
-          className="bg-blue-600 rounded-full p-5 shadow-lg"
+          className="bg-black rounded-full mb-5 p-5 shadow-lg"
           onPress={() => router.push("/(dashboard)/grocery/new")}
         >
           <MaterialIcons name="add" size={28} color="#fff" />
         </Pressable>
       </View>
-    </View>
+    </ImageBackground>
   );
 };
+
+const styles = StyleSheet.create({
+  glassCard: {
+    backgroundColor: "rgba(255,255,255,0.2)",
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.4)",
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+  },
+});
 
 export default GroceryListScreen;
