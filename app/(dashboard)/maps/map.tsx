@@ -1,6 +1,5 @@
-import Constants from "expo-constants";
 import * as Location from "expo-location";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   StyleSheet,
@@ -8,207 +7,236 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import MapView, { Marker } from "react-native-maps";
+import MapView, { Marker, Region, UrlTile } from "react-native-maps";
 
-interface Place {
-  vicinity: string | undefined;
+// fallback region (Colombo)
+const FALLBACK_REGION: Region = {
+  latitude: 6.9271,
+  longitude: 79.8612,
+  latitudeDelta: 0.05,
+  longitudeDelta: 0.05,
+};
+
+type Place = {
   id: string;
   name: string;
   latitude: number;
   longitude: number;
-}
+  vicinity?: string;
+};
 
 const fallbackMarkers: Place[] = [
-  {
-    id: "demo1",
-    name: "Demo Grocery 1",
-    latitude: 37.7749,
-    longitude: -122.4194,
-    vicinity: "Demo Location 1",
-  },
-  {
-    id: "demo2",
-    name: "Demo Grocery 2",
-    latitude: 37.7849,
-    longitude: -122.4094,
-    vicinity: "Demo Location 2",
-  },
+  { id: "1", name: "Demo Store A", latitude: 6.928, longitude: 79.86 },
+  { id: "2", name: "Demo Store B", latitude: 6.93, longitude: 79.865 },
 ];
 
 const MapScreen = () => {
+  const [region, setRegion] = useState<Region | null>(null);
   const [location, setLocation] = useState<Location.LocationObject | null>(
     null
   );
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [places, setPlaces] = useState<Place[]>([]);
   const [loadingPlaces, setLoadingPlaces] = useState(false);
-  const [apiStatus, setApiStatus] = useState<string | null>(null);
-  const [debugInfo, setDebugInfo] = useState<any>(null);
+  const [places, setPlaces] = useState<Place[]>([]);
+  const [permissionError, setPermissionError] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [mapReady, setMapReady] = useState(false);
-  const [tileError, setTileError] = useState(false);
+  const [tilesLoaded, setTilesLoaded] = useState(false);
+  const [showFallback, setShowFallback] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<{ url: string } | null>(null);
+  const [apiStatus, setApiStatus] = useState<string | null>(null);
 
-  // Show fallback markers if there are no places and not loading
-  const showFallback = !loadingPlaces && (!places || places.length === 0);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Get API key from Expo config (works in Expo Go)
-  const GOOGLE_MAPS_API_KEY =
-    Constants.expoConfig?.extra?.GOOGLE_MAPS_API_KEY ||
-    "YOUR_FALLBACK_KEY_HERE";
+  // Request user location
+  useEffect(() => {
+    (async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== "granted") {
+          setPermissionError("Location permission denied. Using fallback.");
+          setRegion(FALLBACK_REGION);
+          return;
+        }
+        const loc = await Location.getCurrentPositionAsync({});
+        setLocation(loc);
+        setRegion({
+          latitude: loc.coords.latitude,
+          longitude: loc.coords.longitude,
+          latitudeDelta: 0.03,
+          longitudeDelta: 0.03,
+        });
+        fetchPlacesByRegion({
+          latitude: loc.coords.latitude,
+          longitude: loc.coords.longitude,
+          latitudeDelta: 0.03,
+          longitudeDelta: 0.03,
+        });
+      } catch (e) {
+        setErrorMsg("Unable to get current location");
+        setRegion(FALLBACK_REGION);
+      }
+    })();
+  }, []);
 
-  const fetchPlaces = useCallback(async (lat: number, lng: number) => {
-    setLoadingPlaces(true);
-    setErrorMsg(null);
-    setApiStatus(null);
-    setDebugInfo(null);
+  // Fetch places using map region bounding box
+  const fetchPlacesByRegion = async (r: Region) => {
     try {
-      const res = await fetch(
-        `https://us-central1-my-grocery-9fbf7.cloudfunctions.net/getNearbyGroceries?lat=${lat}&lng=${lng}&radius=500000&keyword=grocery&type=supermarket&debug=1`
-      );
+      setLoadingPlaces(true);
+      setShowFallback(false);
+      setApiStatus(null);
+
+      const south = r.latitude - r.latitudeDelta / 2;
+      const north = r.latitude + r.latitudeDelta / 2;
+      const west = r.longitude - r.longitudeDelta / 2;
+      const east = r.longitude + r.longitudeDelta / 2;
+
+      const url = `https://overpass-api.de/api/interpreter?data=[out:json];node["shop"~"supermarket|convenience"](${south},${west},${north},${east});out;`;
+      setDebugInfo({ url });
+
+      const res = await fetch(url);
       const data = await res.json();
-      if (data.places && data.places.length) {
-        setPlaces(data.places);
+
+      if (data.elements && data.elements.length > 0) {
+        const mapped = data.elements.map((p: any) => ({
+          id: p.id.toString(),
+          name:
+            p.tags?.name ||
+            (p.tags?.shop === "convenience"
+              ? "Convenience Store"
+              : "Supermarket"),
+          latitude: p.lat,
+          longitude: p.lon,
+          vicinity:
+            p.tags?.addr_full ||
+            p.tags?.addr_street ||
+            p.tags?.addr_city ||
+            "Unknown address",
+        }));
+        setPlaces(mapped);
+        setShowFallback(false);
+        setApiStatus("OK");
       } else {
         setPlaces([]);
-        setApiStatus(data.status || "NO_RESULTS");
+        setShowFallback(true);
+        setApiStatus("NO_RESULTS");
       }
-      if (data.debug) setDebugInfo(data.debug);
     } catch (e) {
-      setErrorMsg("Failed to fetch nearby places");
+      console.error("OSM fetch error:", e);
+      setErrorMsg("Failed to fetch places");
+      setShowFallback(true);
     } finally {
       setLoadingPlaces(false);
     }
-  }, []);
+  };
 
+  // Tiles timeout
   useEffect(() => {
-    (async () => {
-      // Request location permissions
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        setErrorMsg("Permission to access location was denied");
-        return;
+    if (!mapReady || tilesLoaded) return;
+    timeoutRef.current = setTimeout(() => {
+      if (!tilesLoaded) {
+        console.warn("Tiles did not load in time");
       }
-
-      try {
-        const loc = await Location.getCurrentPositionAsync({});
-        setLocation(loc);
-        fetchPlaces(loc.coords.latitude, loc.coords.longitude);
-      } catch {
-        setErrorMsg("Unable to get current location");
-      }
-    })();
-  }, [fetchPlaces]);
-
-  // If location retrieval failed earlier we already return a loader.
+    }, 8000);
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, [mapReady, tilesLoaded]);
 
   return (
     <View style={{ flex: 1, backgroundColor: "#000" }}>
-      <MapView
-        style={styles.map}
-        onMapReady={() => setMapReady(true)}
-        onRegionChangeComplete={() => setTileError(false)}
-        onMapLoaded={() => setTileError(false)}
-        initialRegion={{
-          latitude: location?.coords?.latitude ?? 0,
-          longitude: location?.coords?.longitude ?? 0,
-          latitudeDelta: 0.04,
-          longitudeDelta: 0.04,
-        }}
-        showsUserLocation
-        showsCompass
-      >
-        {/* User marker */}
-        {location && (
-          <Marker
-            coordinate={{
-              latitude: location.coords.latitude,
-              longitude: location.coords.longitude,
-            }}
-            title="You are here"
-            pinColor="blue"
-          />
-        )}
-        {/* API markers */}
-        {places.map((store) => (
-          <Marker
-            key={store.id}
-            coordinate={{
-              latitude: store.latitude,
-              longitude: store.longitude,
-            }}
-            title={store.name}
-            description={store.vicinity}
-            pinColor="green"
-          />
-        ))}
-        {/* Fallback markers */}
-        {fallbackMarkers.map((m) => (
-          <Marker
-            key={m.id}
-            coordinate={{ latitude: m.latitude, longitude: m.longitude }}
-            title={m.name}
-            description="(Fallback demo)"
-            pinColor="orange"
-          />
-        ))}
-      </MapView>
-
-      {!mapReady && (
-        <View
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <ActivityIndicator size="large" color="#0ea5e9" />
-          <Text style={{ color: "#fff", marginTop: 12, fontWeight: "bold" }}>
-            Loading map...
-          </Text>
+      {!region && (
+        <View style={styles.loaderLayer}>
+          <ActivityIndicator size="large" color="#6366f1" />
+          <Text style={styles.loaderText}>Getting location...</Text>
         </View>
       )}
 
-      {/* Status / Debug Panel */}
-      <View
-        style={{
-          position: "absolute",
-          top: 50,
-          left: 16,
-          right: 16,
-          backgroundColor: "rgba(0,0,0,0.55)",
-          padding: 14,
-          borderRadius: 16,
-        }}
-      >
-        <Text style={{ color: "white", fontWeight: "700", fontSize: 16 }}>
-          Nearby Groceries
-        </Text>
-        {loadingPlaces && (
-          <Text style={{ color: "#ddd", marginTop: 4 }}>Loading...</Text>
-        )}
+      {region && (
+        <MapView
+          style={StyleSheet.absoluteFillObject}
+          initialRegion={region}
+          onRegionChangeComplete={(r) => {
+            setRegion(r);
+            fetchPlacesByRegion(r);
+          }}
+          showsUserLocation
+          showsMyLocationButton
+          onMapReady={() => setMapReady(true)}
+          onMapLoaded={() => setTilesLoaded(true)}
+          loadingEnabled
+          loadingIndicatorColor="#6366f1"
+        >
+          {/* OpenStreetMap tiles */}
+          <UrlTile
+            urlTemplate="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+            maximumZ={19}
+            flipY={false}
+          />
+
+          {/* User location marker */}
+          {location && (
+            <Marker
+              coordinate={{
+                latitude: location.coords.latitude,
+                longitude: location.coords.longitude,
+              }}
+              title="You are here"
+              pinColor="blue"
+            />
+          )}
+
+          {/* API markers */}
+          {places.map((store) => (
+            <Marker
+              key={store.id}
+              coordinate={{
+                latitude: store.latitude,
+                longitude: store.longitude,
+              }}
+              title={store.name}
+              description={store.vicinity}
+              pinColor="green"
+            />
+          ))}
+
+          {/* Fallback markers */}
+          {showFallback &&
+            fallbackMarkers.map((m) => (
+              <Marker
+                key={m.id}
+                coordinate={{ latitude: m.latitude, longitude: m.longitude }}
+                title={m.name}
+                description="(Fallback demo)"
+                pinColor="orange"
+              />
+            ))}
+        </MapView>
+      )}
+
+      {!mapReady && (
+        <View style={styles.loaderLayer}>
+          <ActivityIndicator size="large" color="#0ea5e9" />
+          <Text style={styles.loaderText}>Loading map...</Text>
+        </View>
+      )}
+
+      {/* Debug Panel */}
+      <View style={styles.debugBox}>
+        <Text style={styles.debugTitle}>Nearby Groceries</Text>
+        {loadingPlaces && <Text style={styles.debugLine}>Loading...</Text>}
         {!loadingPlaces && showFallback && (
-          <Text style={{ color: "#fca5a5", marginTop: 4 }}>
+          <Text style={styles.debugLine}>
             {errorMsg
               ? errorMsg
-              : apiStatus === "ZERO_RESULTS" || apiStatus === "NO_RESULTS"
+              : apiStatus === "NO_RESULTS"
                 ? "No grocery places found (showing demo markers)."
                 : apiStatus
                   ? `Status: ${apiStatus}`
                   : "No data returned."}
           </Text>
         )}
-        {!loadingPlaces && debugInfo && (
-          <Text
-            style={{
-              color: "#93c5fd",
-              marginTop: 6,
-              fontSize: 11,
-            }}
-            numberOfLines={2}
-          >
+        {debugInfo && (
+          <Text style={[styles.debugLine, { color: "#93c5fd" }]}>
             debug: {debugInfo.url}
           </Text>
         )}
@@ -216,24 +244,20 @@ const MapScreen = () => {
 
       {/* Refresh */}
       <TouchableOpacity
-        onPress={async () => {
-          if (!location) return;
-          fetchPlaces(location.coords.latitude, location.coords.longitude);
-        }}
-        style={{
-          position: "absolute",
-          bottom: 40,
-          right: 20,
-          backgroundColor: "rgba(0,0,0,0.7)",
-          paddingVertical: 12,
-          paddingHorizontal: 18,
-          borderRadius: 30,
-        }}
+        onPress={() => region && fetchPlacesByRegion(region)}
+        style={styles.refreshButton}
       >
         <Text style={{ color: "white", fontWeight: "600" }}>
           {loadingPlaces ? "..." : "Refresh"}
         </Text>
       </TouchableOpacity>
+
+      {/* Permission / Error */}
+      {permissionError && (
+        <View style={styles.banner}>
+          <Text style={styles.bannerText}>{permissionError}</Text>
+        </View>
+      )}
     </View>
   );
 };
@@ -241,6 +265,57 @@ const MapScreen = () => {
 export default MapScreen;
 
 const styles = StyleSheet.create({
-  map: { flex: 1 },
-  center: { flex: 1, justifyContent: "center", alignItems: "center" },
+  loaderLayer: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#000",
+  },
+  loaderText: {
+    marginTop: 12,
+    color: "#fff",
+    fontWeight: "600",
+    letterSpacing: 0.5,
+  },
+  banner: {
+    position: "absolute",
+    top: 40,
+    alignSelf: "center",
+    backgroundColor: "rgba(0,0,0,0.6)",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  bannerText: { color: "#fff", fontSize: 12, fontWeight: "600" },
+  debugBox: {
+    position: "absolute",
+    top: 50,
+    left: 16,
+    right: 16,
+    backgroundColor: "rgba(17,24,39,0.9)",
+    padding: 14,
+    borderRadius: 16,
+  },
+  debugTitle: {
+    color: "#fff",
+    fontWeight: "700",
+    marginBottom: 6,
+    fontSize: 14,
+    letterSpacing: 0.5,
+  },
+  debugLine: {
+    color: "rgba(255,255,255,0.75)",
+    fontSize: 11,
+    marginBottom: 2,
+    lineHeight: 16,
+  },
+  refreshButton: {
+    position: "absolute",
+    bottom: 40,
+    right: 20,
+    backgroundColor: "rgba(0,0,0,0.7)",
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+    borderRadius: 30,
+  },
 });

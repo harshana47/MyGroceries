@@ -16,12 +16,7 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true,
-      "config": {
-        "googleMaps": {
-          "apiKey": "AIzaSyA4JYTXPnur3tpF2S7OI1gQyo1lWoXVbA4"
-        }
-      }
+      "edgeToEdgeEnabled": true
     },
     "web": {
       "bundler": "metro",
@@ -52,3 +47,4 @@
     "owner": "harshana_47"
   }
 }
+    
