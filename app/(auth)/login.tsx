@@ -49,7 +49,7 @@ export default function Login() {
     //       </Text>
     //     </View>
     <ImageBackground
-      source={require("../../assets/images/shop2.jpg")}
+      source={require("../../assets/images/man.jpg")}
       resizeMode="cover"
       style={{ flex: 1 }}
     >

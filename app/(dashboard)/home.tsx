@@ -7,13 +7,13 @@ import {
   Animated,
   Image,
   ImageBackground,
+  StatusBar,
   StyleSheet,
   Text,
   TouchableWithoutFeedback,
   View,
 } from "react-native";
 
-// Utility to convert hex or named colors to rgba with opacity
 const getRgba = (color: string, opacity: number) => {
   if (color.startsWith("#")) {
     const bigint = parseInt(color.replace("#", ""), 16);
@@ -24,11 +24,10 @@ const getRgba = (color: string, opacity: number) => {
   }
   if (color === "black") return `rgba(0,0,0,${opacity})`;
   if (color === "white") return `rgba(255,255,255,${opacity})`;
-  // fallback
   return `rgba(255,255,255,${opacity})`;
 };
 
-// Reusable animated card component
+// Reusable animated card
 const AnimatedCard = ({
   color,
   icon,
@@ -72,10 +71,8 @@ const AnimatedCard = ({
         style={[
           styles.card,
           {
-            backgroundColor: getRgba(color, 0.6),
+            backgroundColor: getRgba(color, 0.95),
             transform: [{ scale }],
-            shadowOpacity: 0.12,
-            shadowRadius: 20,
           },
         ]}
       >
@@ -119,84 +116,73 @@ export default function Home() {
       style={{ flex: 1 }}
       resizeMode="cover"
     >
-      {/* Dark overlay */}
+      {/* StatusBar with black background */}
+      <StatusBar backgroundColor="black" barStyle="light-content" />
+
+      {/* Overlay */}
       <View
         style={{
           ...StyleSheet.absoluteFillObject,
-          backgroundColor: "rgba(0,0,0,0.48)",
+          backgroundColor: "rgba(0,0,0,0.55)",
         }}
       />
 
-      <View
-        style={{ flex: 1, paddingHorizontal: 24, paddingTop: 12, zIndex: 2 }}
-      >
+      <View style={{ flex: 1, paddingHorizontal: 20, paddingTop: 30 }}>
         {/* Header */}
         <View
           style={{
             flexDirection: "row",
-            justifyContent: "flex-end",
-            marginBottom: 20,
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: 40,
           }}
         >
+          <Text
+            style={{
+              fontSize: 32,
+              fontWeight: "800",
+              color: "white",
+              letterSpacing: 1,
+            }}
+          >
+            My Space
+          </Text>
+
           <View
             style={{
               borderWidth: 2,
-              borderColor: "green",
-              borderRadius: 24,
-              padding: 4,
-              backgroundColor: "rgba(34,197,94,0.10)",
-              shadowColor: "#22c55e",
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.25,
+              borderColor: "#0ea5e9",
+              borderRadius: 28,
+              padding: 3,
+              shadowColor: "#0ea5e9",
+              shadowOpacity: 0.4,
               shadowRadius: 6,
             }}
           >
             {photoURL ? (
               <Image
                 source={{ uri: photoURL }}
-                style={{ width: 42, height: 42, borderRadius: 21 }}
+                style={{ width: 48, height: 48, borderRadius: 24 }}
               />
             ) : (
               <View
                 style={{
-                  width: 42,
-                  height: 42,
-                  borderRadius: 21,
+                  width: 48,
+                  height: 48,
+                  borderRadius: 24,
                   backgroundColor: "#d1fae5",
                   justifyContent: "center",
                   alignItems: "center",
                 }}
               >
-                <Text style={{ color: "#059669", fontWeight: "bold" }}>U</Text>
+                <Text style={{ color: "#0ea5e9", fontWeight: "bold" }}>U</Text>
               </View>
             )}
           </View>
         </View>
 
-        {/* Title */}
-        <View
-          style={{
-            position: "absolute",
-            top: 110,
-            left: 0,
-            right: 0,
-            zIndex: 10,
-          }}
-        >
-          <Text
-            style={{
-              fontSize: 36,
-              fontWeight: "800",
-              color: "white",
-              textAlign: "center",
-            }}
-          >
-            Dashboard
-          </Text>
-        </View>
-
         {/* Cards */}
-        <View style={{ flex: 1, marginTop: 140 }}>
+        <View style={{ flex: 1, marginTop: 30 }}>
           <View style={{ flexDirection: "row", marginBottom: 20 }}>
             <AnimatedCard
               color="black"
@@ -254,7 +240,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.4)",
+    borderColor: "rgba(255,255,255,0.2)",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.12,

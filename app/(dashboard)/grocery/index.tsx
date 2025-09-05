@@ -7,6 +7,7 @@ import {
 } from "@/services/groceryService";
 import { Grocery } from "@/types/grocery";
 import { MaterialIcons } from "@expo/vector-icons";
+import { BlurView } from "expo-blur";
 import { useRouter } from "expo-router";
 import { onSnapshot } from "firebase/firestore";
 import { useEffect, useState } from "react";
@@ -100,111 +101,124 @@ const GroceryListScreen = () => {
     : 0;
 
   return (
-    <ImageBackground
-      source={require("../../../assets/images/shop.jpg")}
-      style={{ flex: 1 }}
-      resizeMode="cover"
-    >
-      {/* Dark overlay */}
-      <View
-        style={{
-          ...StyleSheet.absoluteFillObject,
-          backgroundColor: "rgba(0,0,0,0.75)",
-        }}
-      />
+    <View style={{ flex: 1 }}>
+      <ImageBackground
+        source={require("../../../assets/images/purple.jpg")}
+        style={{ flex: 1 }}
+        resizeMode="cover"
+      >
+        {/* Blur overlay on background image */}
+        <BlurView intensity={60} tint="dark" style={StyleSheet.absoluteFill} />
+        {/* Dark overlay */}
+        <View
+          style={{
+            ...StyleSheet.absoluteFillObject,
+            backgroundColor: "rgba(0,0,0,0.70)",
+          }}
+        />
+        <View style={{ flex: 1, paddingHorizontal: 1, paddingTop: 30 }}>
+          {/* Header */}
+          <View className="p-5 flex-row justify-between items-center z-10">
+            <Text className="text-4xl font-extrabold text-white">
+              Groceries
+            </Text>
+          </View>
 
-      {/* Header */}
-      <View className="p-5 flex-row justify-between items-center z-10">
-        <Text className="text-3xl font-extrabold text-white">Groceries</Text>
-      </View>
+          {/* Grocery List */}
+          <ScrollView className="mt-3 px-4 z-10">
+            {groceries.map((item) => (
+              <View
+                key={item.id}
+                style={styles.glassCard}
+                className={`p-4 mb-3 rounded-2xl shadow-lg ${
+                  item.completed ? "border-green-500" : "border-gray-200"
+                }`}
+              >
+                <View className="flex-row justify-between items-center">
+                  <View>
+                    <Text className="text-lg font-semibold text-white">
+                      {item.name}
+                    </Text>
+                    <Text className="text-sm text-gray-200">
+                      Qty: {item.quantity}
+                    </Text>
+                  </View>
 
-      {/* Grocery List */}
-      <ScrollView className="mt-3 px-4 z-10">
-        {groceries.map((item) => (
-          <View
-            key={item.id}
-            style={styles.glassCard}
-            className={`p-4 mb-3 rounded-2xl shadow-lg ${
-              item.completed ? "border-green-500" : "border-gray-200"
-            }`}
-          >
-            <View className="flex-row justify-between items-center">
-              <View>
-                <Text className="text-lg font-semibold text-white">
-                  {item.name}
-                </Text>
-                <Text className="text-sm text-gray-200">
-                  Qty: {item.quantity}
-                </Text>
+                  <View className="flex-row items-center">
+                    {/* Edit Button */}
+                    <TouchableOpacity
+                      className="p-2 rounded-xl mr-2 bg-white/20"
+                      onPress={() =>
+                        router.push(`/(dashboard)/grocery/${item.id}`)
+                      }
+                    >
+                      <MaterialIcons name="edit" size={20} color="#fff" />
+                    </TouchableOpacity>
+
+                    {/* Delete Button */}
+                    <TouchableOpacity
+                      className="p-2 rounded-xl mr-4 bg-white/20"
+                      onPress={() => confirmDelete(item.id!)}
+                    >
+                      <MaterialIcons name="delete" size={20} color="#fff" />
+                    </TouchableOpacity>
+
+                    {/* Complete/Done Button */}
+                    <TouchableOpacity
+                      className={`px-3 py-2 rounded-xl flex-row items-center ${
+                        item.completed ? "bg-green-600" : "bg-blue-600"
+                      }`}
+                      onPress={() => toggleComplete(item.id!)}
+                      style={{ marginLeft: 12 }}
+                    >
+                      <MaterialIcons
+                        name="check-circle"
+                        size={20}
+                        color="#fff"
+                      />
+                      <Text className="ml-1 text-white font-semibold">
+                        {item.completed ? "Done" : "Complete"}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
               </View>
+            ))}
+          </ScrollView>
 
-              <View className="flex-row items-center">
-                {/* Edit Button */}
-                <TouchableOpacity
-                  className="p-2 rounded-xl mr-2 bg-white/20"
-                  onPress={() => router.push(`/(dashboard)/grocery/${item.id}`)}
-                >
-                  <MaterialIcons name="edit" size={20} color="#fff" />
-                </TouchableOpacity>
+          {/* Bottom Section */}
+          <View className="p-4 z-10">
+            <TouchableOpacity
+              className="bg-purple-700 py-4 rounded-2xl mb-3 flex-row justify-center items-center"
+              onPress={handleFinishAll}
+            >
+              <MaterialIcons name="done-all" size={22} color="#fff" />
+              <Text className="ml-2 text-white font-semibold text-lg">
+                Finish All
+              </Text>
+            </TouchableOpacity>
 
-                {/* Delete Button */}
-                <TouchableOpacity
-                  className="p-2 rounded-xl mr-4 bg-white/20"
-                  onPress={() => confirmDelete(item.id!)}
-                >
-                  <MaterialIcons name="delete" size={20} color="#fff" />
-                </TouchableOpacity>
-
-                {/* Complete/Done Button */}
-                <TouchableOpacity
-                  className={`px-3 py-2 rounded-xl flex-row items-center ${
-                    item.completed ? "bg-green-600" : "bg-blue-600"
-                  }`}
-                  onPress={() => toggleComplete(item.id!)}
-                  style={{ marginLeft: 12 }}
-                >
-                  <MaterialIcons name="check-circle" size={20} color="#fff" />
-                  <Text className="ml-1 text-white font-semibold">
-                    {item.completed ? "Done" : "Complete"}
-                  </Text>
-                </TouchableOpacity>
-              </View>
+            {/* Progress Bar */}
+            <View className="h-4 bg-gray-400 rounded-full overflow-hidden">
+              <View
+                className="h-4 bg-green-500 rounded-full"
+                style={{ width: `${progress}%` }}
+              />
             </View>
           </View>
-        ))}
-      </ScrollView>
 
-      {/* Bottom Section */}
-      <View className="p-4 z-10">
-        <TouchableOpacity
-          className="bg-purple-700 py-4 rounded-2xl mb-3 flex-row justify-center items-center"
-          onPress={handleFinishAll}
-        >
-          <MaterialIcons name="done-all" size={22} color="#fff" />
-          <Text className="ml-2 text-white font-semibold text-lg">
-            Finish All
-          </Text>
-        </TouchableOpacity>
-
-        {/* Progress Bar */}
-        <View className="h-4 bg-gray-400 rounded-full overflow-hidden">
-          <View
-            className="h-4 bg-green-500 rounded-full"
-            style={{ width: `${progress}%` }}
-          />
+          {/* Floating Add Button */}
+          <View className="absolute bottom-24 right-6 z-20">
+            <Pressable
+              className="bg-black rounded-full mb-5 p-5 shadow-lg"
+              onPress={() => router.push("/(dashboard)/grocery/new")}
+            >
+              <MaterialIcons name="add" size={28} color="#fff" />
+            </Pressable>
+          </View>
         </View>
-      </View>
-
-      {/* Floating Add Button */}
-      <View className="absolute bottom-24 right-6 z-20">
-        <Pressable
-          className="bg-black rounded-full mb-5 p-5 shadow-lg"
-          onPress={() => router.push("/(dashboard)/grocery/new")}
-        >
-          <MaterialIcons name="add" size={28} color="#fff" />
-        </Pressable>
-      </View>
-    </ImageBackground>
+      </ImageBackground>
+    </View>
   );
 };
 
