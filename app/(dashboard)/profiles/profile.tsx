@@ -140,7 +140,7 @@ const ProfileScreen = () => {
       <View
         style={{
           ...StyleSheet.absoluteFillObject,
-          backgroundColor: "rgba(0,0,0,0.75)",
+          backgroundColor: "rgba(0,0,0,0.85)",
         }}
       />
       <SafeAreaView style={{ flex: 1 }}>

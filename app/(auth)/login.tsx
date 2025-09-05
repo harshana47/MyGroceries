@@ -1,13 +1,17 @@
 // app/login.tsx
+import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
-import { LogIn } from "lucide-react-native";
+import { Eye, EyeOff, Lock, LogIn, Mail } from "lucide-react-native";
 import React, { useState } from "react";
 import {
-  Alert,
+  ActivityIndicator,
+  Animated,
+  Easing,
   ImageBackground,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   StyleSheet,
   Text,
   TextInput,
@@ -21,13 +25,48 @@ const auth = getAuth(app);
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const headerAnim = React.useRef(new Animated.Value(0)).current;
+  const formAnim = React.useRef(new Animated.Value(0)).current;
+
+  React.useEffect(() => {
+    Animated.stagger(160, [
+      Animated.timing(headerAnim, {
+        toValue: 1,
+        duration: 600,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.spring(formAnim, {
+        toValue: 1,
+        friction: 9,
+        tension: 60,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
 
   async function handleLogin() {
+    if (!email.trim() || !password.trim()) {
+      setErrorMsg("Email and password required.");
+      return;
+    }
+    setErrorMsg(null);
+    setLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      router.replace("/home"); // after login redirect to dashboard
+      await signInWithEmailAndPassword(auth, email.trim(), password);
+      router.replace("/home");
     } catch (error: any) {
-      Alert.alert("Login Error", error.message);
+      setErrorMsg(
+        error?.code === "auth/invalid-credential"
+          ? "Invalid email or password."
+          : error.message || "Login failed."
+      );
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -67,69 +106,162 @@ export default function Login() {
         style={{ zIndex: 2 }}
       >
         {/* Header */}
-        <View className="items-center mt-12">
-          <Text className="text-white text-5xl mt-4 font-extrabold">Login</Text>
-          <Text className="text-white mt-4 text-base">
+        <Animated.View
+          style={{
+            opacity: headerAnim,
+            transform: [
+              {
+                translateY: headerAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [28, 0],
+                }),
+              },
+            ],
+          }}
+          className="items-center mt-16"
+        >
+          <Text className="text-white text-5xl font-extrabold tracking-tight">
+            Login
+          </Text>
+          <Text className="text-white/80 mt-4 text-base">
             Welcome back 👋 Sign in to continue
           </Text>
-        </View>
+        </Animated.View>
 
         {/* Main Card */}
-        <View
-          style={styles.glassCard}
-          className="rounded-3xl mt-1 p-8 mb-8 shadow-lg"
+        <Animated.View
+          style={{
+            opacity: formAnim,
+            transform: [
+              {
+                translateY: formAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [42, 0],
+                }),
+              },
+              {
+                scale: formAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0.96, 1],
+                }),
+              },
+            ],
+          }}
+          className="mt-2 mb-8"
         >
-          {/* Email */}
-          <Text className="text-white font-semibold mb-2 text-lg">Email</Text>
-          <TextInput
-            placeholder="Enter your email"
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            keyboardType="email-address"
-            style={styles.inputClassy}
-            className="mb-4"
-          />
-
-          {/* Password */}
-          <Text className="text-white font-semibold mb-2 text-lg">
-            Password
-          </Text>
-          <TextInput
-            placeholder="Enter your password"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            style={styles.inputClassy}
-            className="mb-2"
-          />
-
-          {/* Forgot password */}
-          <TouchableOpacity
-            onPress={() => router.push("../(auth)/forgotPassword")}
-            className="mb-6 mt-2"
+          <LinearGradient
+            colors={[
+              "rgba(255,255,255,0.20)",
+              "rgba(255,255,255,0.25)",
+              "rgba(255,255,255,0.28)",
+            ]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.glassOuter}
           >
-            <Text className="text-black text-right font-semibold underline">
-              Forgot Password?
-            </Text>
-          </TouchableOpacity>
+            <View style={styles.glassInner}>
+              {/* Error Message */}
+              {errorMsg && (
+                <View style={styles.errorBadge}>
+                  <Text style={styles.errorText}>{errorMsg}</Text>
+                </View>
+              )}
 
-          {/* Login button */}
-          <TouchableOpacity
-            onPress={handleLogin}
-            className="bg-black py-4 rounded-2xl items-center flex-row justify-center space-x-2"
-          >
-            <LogIn size={22} color="white" />
-            <Text className="text-white font-semibold text-lg ml-2">Login</Text>
-          </TouchableOpacity>
-        </View>
+              {/* Email */}
+              <Text className="text-white font-semibold mb-2 text-lg">
+                Email
+              </Text>
+              <View style={styles.inputRow}>
+                <View style={styles.iconLeft}>
+                  <Mail size={18} color="#475569" />
+                </View>
+                <TextInput
+                  placeholder="you@example.com"
+                  placeholderTextColor="#64748b"
+                  value={email}
+                  onChangeText={setEmail}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  style={styles.inputField}
+                  returnKeyType="next"
+                />
+              </View>
+
+              {/* Password */}
+              <Text className="text-white font-semibold mb-2 text-lg mt-5">
+                Password
+              </Text>
+              <View style={styles.inputRow}>
+                <View style={styles.iconLeft}>
+                  <Lock size={18} color="#475569" />
+                </View>
+                <TextInput
+                  placeholder="••••••••"
+                  placeholderTextColor="#64748b"
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={!showPassword}
+                  style={styles.inputField}
+                  returnKeyType="done"
+                />
+                <Pressable
+                  onPress={() => setShowPassword((p) => !p)}
+                  style={styles.togglePassBtn}
+                  hitSlop={10}
+                >
+                  {showPassword ? (
+                    <EyeOff size={18} color="#475569" />
+                  ) : (
+                    <Eye size={18} color="#475569" />
+                  )}
+                </Pressable>
+              </View>
+
+              {/* Forgot password */}
+              <Pressable
+                onPress={() => router.push("../(auth)/forgotPassword")}
+                style={{
+                  alignSelf: "flex-end",
+                  marginTop: 12,
+                  marginBottom: 26,
+                }}
+              >
+                <Text style={styles.forgotText}>Forgot Password?</Text>
+              </Pressable>
+
+              {/* Login button */}
+              <TouchableOpacity
+                onPress={handleLogin}
+                disabled={loading}
+                activeOpacity={0.85}
+                style={[styles.primaryButton, loading && { opacity: 0.7 }]}
+              >
+                <LinearGradient
+                  colors={["#18181b", "#27272a", "#3f3f46"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.primaryGradient}
+                >
+                  {loading ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <>
+                      <LogIn size={22} color="white" />
+                      <Text style={styles.primaryButtonText}>Login</Text>
+                    </>
+                  )}
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+          </LinearGradient>
+        </Animated.View>
 
         {/* Footer */}
         <View className="items-center mb-8">
           <TouchableOpacity onPress={() => router.push("../signup")}>
-            <Text className="text-white font-medium">
+            <Text style={styles.footerText}>
               Don’t have an account?{" "}
-              <Text className="text-blue-600 font-semibold">Sign up</Text>
+              <Text style={styles.footerLink}>Sign up</Text>
             </Text>
           </TouchableOpacity>
         </View>
@@ -139,29 +271,96 @@ export default function Login() {
 }
 
 const styles = StyleSheet.create({
-  glassCard: {
-    backgroundColor: "rgba(255,255,255,0.25)",
-    borderRadius: 24,
+  glassOuter: {
+    borderRadius: 30,
+    padding: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.25,
+    shadowRadius: 28,
+    elevation: 10,
+  },
+  glassInner: {
+    borderRadius: 28,
+    backgroundColor: "rgba(255,255,255,0.18)",
+    padding: 26,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.4)",
-    overflow: "hidden",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.12,
-    shadowRadius: 20,
+    borderColor: "rgba(255,255,255,0.35)",
   },
-  inputClassy: {
-    backgroundColor: "rgba(255,255,255,0.85)", // more glassy
+  inputRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 20,
+    backgroundColor: "rgba(255,255,255,0.85)",
     borderWidth: 1.5,
-    borderColor: "black",
-    borderRadius: 18,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 16,
-    color: "#000", // change to black text
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
+    borderColor: "rgba(0,0,0,0.75)",
+    paddingRight: 8,
   },
+  iconLeft: {
+    width: 42,
+    height: 42,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  inputField: {
+    flex: 1,
+    paddingVertical: 12,
+    fontSize: 15.5,
+    color: "#0f172a",
+  },
+  togglePassBtn: {
+    padding: 8,
+    borderRadius: 14,
+  },
+  forgotText: {
+    color: "#020617",
+    fontWeight: "600",
+    fontSize: 13,
+    textDecorationLine: "underline",
+    letterSpacing: 0.3,
+  },
+  primaryButton: {
+    borderRadius: 22,
+    overflow: "hidden",
+  },
+  primaryGradient: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 15,
+    borderRadius: 22,
+    gap: 8,
+  },
+  primaryButtonText: {
+    color: "white",
+    fontSize: 17,
+    fontWeight: "700",
+    letterSpacing: 0.5,
+  },
+  errorBadge: {
+    backgroundColor: "rgba(239,68,68,0.15)",
+    borderColor: "rgba(239,68,68,0.45)",
+    borderWidth: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 16,
+    marginBottom: 18,
+  },
+  errorText: {
+    color: "#dc2626",
+    fontWeight: "600",
+    fontSize: 13,
+    letterSpacing: 0.4,
+  },
+  footerText: {
+    color: "rgba(255,255,255,0.85)",
+    fontSize: 14,
+    fontWeight: "500",
+    letterSpacing: 0.3,
+  },
+  footerLink: {
+    color: "#2563eb",
+    fontWeight: "700",
+  },
+  // existing inputClassy kept if used elsewhere
 });

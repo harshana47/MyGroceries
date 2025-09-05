@@ -4,15 +4,19 @@ import {
   deleteGrocery,
   groceriesRef,
   moveToHistory,
+  updateGrocery,
 } from "@/services/groceryService";
 import { Grocery } from "@/types/grocery";
 import { MaterialIcons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { onSnapshot } from "firebase/firestore";
-import { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Alert,
+  Animated,
+  Easing,
   ImageBackground,
   Pressable,
   ScrollView,
@@ -25,8 +29,13 @@ import {
 const GroceryListScreen = () => {
   const [groceries, setGroceries] = useState<Grocery[]>([]);
   const [completedIds, setCompletedIds] = useState<string[]>([]);
+  const [filter, setFilter] = useState<"all" | "active" | "completed">("all");
   const router = useRouter();
   const { showLoader, hideLoader } = useLoader();
+
+  // Animated progress
+  const progressAnim = useRef(new Animated.Value(0)).current;
+  const [barWidth, setBarWidth] = useState(0);
 
   useEffect(() => {
     showLoader();
@@ -49,6 +58,26 @@ const GroceryListScreen = () => {
     return () => unsub();
   }, []);
 
+  const progress = groceries.length
+    ? (completedIds.length / groceries.length) * 100
+    : 0;
+
+  useEffect(() => {
+    Animated.timing(progressAnim, {
+      toValue: progress,
+      duration: 500,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+    }).start();
+  }, [progress]);
+
+  // Filtered list
+  const visibleGroceries = groceries.filter((g) => {
+    if (filter === "completed") return completedIds.includes(g.id!);
+    if (filter === "active") return !completedIds.includes(g.id!);
+    return true;
+  });
+
   const confirmDelete = (id: string) => {
     Alert.alert("Delete Grocery", "Are you sure?", [
       { text: "Cancel", style: "cancel" },
@@ -68,15 +97,28 @@ const GroceryListScreen = () => {
     }
   };
 
-  const toggleComplete = (id: string) => {
-    setGroceries((prev) =>
-      prev.map((item) =>
-        item.id === id ? { ...item, completed: !item.completed } : item
-      )
-    );
-    setCompletedIds((prev) =>
-      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
-    );
+  const toggleComplete = async (id: string) => {
+    // Find the grocery item
+    const item = groceries.find((g) => g.id === id);
+    if (!item) return;
+    const newCompleted = !item.completed;
+    try {
+      showLoader();
+      await updateGrocery(id, { completed: newCompleted });
+      // Local state update for instant UI feedback
+      setGroceries((prev) =>
+        prev.map((item) =>
+          item.id === id ? { ...item, completed: newCompleted } : item
+        )
+      );
+      setCompletedIds((prev) =>
+        newCompleted ? [...prev, id] : prev.filter((i) => i !== id)
+      );
+    } catch (err) {
+      console.error("Failed to update completed status:", err);
+    } finally {
+      hideLoader();
+    }
   };
 
   const handleFinishAll = async () => {
@@ -96,20 +138,16 @@ const GroceryListScreen = () => {
     }
   };
 
-  const progress = groceries.length
-    ? (completedIds.length / groceries.length) * 100
-    : 0;
-
   return (
     <View style={{ flex: 1 }}>
+      {/* Background keeps original image */}
       <ImageBackground
         source={require("../../../assets/images/purple.jpg")}
         style={{ flex: 1 }}
         resizeMode="cover"
       >
-        {/* Blur overlay on background image */}
+        {/* Existing blur + dark overlay */}
         <BlurView intensity={60} tint="dark" style={StyleSheet.absoluteFill} />
-        {/* Dark overlay */}
         <View
           style={{
             ...StyleSheet.absoluteFillObject,
@@ -119,101 +157,276 @@ const GroceryListScreen = () => {
         <View style={{ flex: 1, paddingHorizontal: 1, paddingTop: 30 }}>
           {/* Header */}
           <View className="p-5 flex-row justify-between items-center z-10">
-            <Text className="text-4xl font-extrabold text-white">
-              Groceries
-            </Text>
+            <View>
+              <Text className="text-4xl font-extrabold text-white">
+                Groceries
+              </Text>
+              <Text className="text-xs text-white/70 mt-1">
+                {completedIds.length} of {groceries.length} completed
+              </Text>
+            </View>
+            {/* Filter pills */}
+            <View className="flex-row bg-white/10 rounded-full p-1">
+              {(["all", "active", "completed"] as const).map((f) => {
+                const active = f === filter;
+                return (
+                  <Pressable
+                    key={f}
+                    onPress={() => setFilter(f)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Show ${f} groceries`}
+                    className={`px-3 py-1 rounded-full ${
+                      active ? "bg-purple-600" : "bg-transparent"
+                    }`}
+                  >
+                    <Text
+                      className={`text-xs font-semibold ${
+                        active ? "text-white" : "text-white/70"
+                      }`}
+                    >
+                      {f.charAt(0).toUpperCase() + f.slice(1)}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
           </View>
 
-          {/* Grocery List */}
-          <ScrollView className="mt-3 px-4 z-10">
-            {groceries.map((item) => (
-              <View
-                key={item.id}
-                style={styles.glassCard}
-                className={`p-4 mb-3 rounded-2xl shadow-lg ${
-                  item.completed ? "border-green-500" : "border-gray-200"
-                }`}
+          {/* List / Empty State */}
+          {visibleGroceries.length === 0 ? (
+            <View className="flex-1 items-center justify-center px-8">
+              <LinearGradient
+                colors={["#6048e6", "#a866ff"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={{
+                  padding: 2,
+                  borderRadius: 24,
+                  width: "100%",
+                  maxWidth: 340,
+                }}
               >
-                <View className="flex-row justify-between items-center">
-                  <View>
-                    <Text className="text-lg font-semibold text-white">
-                      {item.name}
-                    </Text>
-                    <Text className="text-sm text-gray-200">
-                      Qty: {item.quantity}
-                    </Text>
-                  </View>
-
-                  <View className="flex-row items-center">
-                    {/* Edit Button */}
-                    <TouchableOpacity
-                      className="p-2 rounded-xl mr-2 bg-white/20"
-                      onPress={() =>
-                        router.push(`/(dashboard)/grocery/${item.id}`)
-                      }
-                    >
-                      <MaterialIcons name="edit" size={20} color="#fff" />
-                    </TouchableOpacity>
-
-                    {/* Delete Button */}
-                    <TouchableOpacity
-                      className="p-2 rounded-xl mr-4 bg-white/20"
-                      onPress={() => confirmDelete(item.id!)}
-                    >
-                      <MaterialIcons name="delete" size={20} color="#fff" />
-                    </TouchableOpacity>
-
-                    {/* Complete/Done Button */}
-                    <TouchableOpacity
-                      className={`px-3 py-2 rounded-xl flex-row items-center ${
-                        item.completed ? "bg-green-600" : "bg-blue-600"
-                      }`}
-                      onPress={() => toggleComplete(item.id!)}
-                      style={{ marginLeft: 12 }}
-                    >
-                      <MaterialIcons
-                        name="check-circle"
-                        size={20}
-                        color="#fff"
-                      />
-                      <Text className="ml-1 text-white font-semibold">
-                        {item.completed ? "Done" : "Complete"}
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
+                <View
+                  style={{
+                    backgroundColor: "rgba(0,0,0,0.65)",
+                    padding: 22,
+                    borderRadius: 22,
+                    alignItems: "center",
+                  }}
+                >
+                  <MaterialIcons
+                    name="shopping-cart"
+                    size={40}
+                    color="#ffffff"
+                    style={{ opacity: 0.8 }}
+                  />
+                  <Text className="text-white font-semibold text-lg mt-4">
+                    {groceries.length === 0
+                      ? "No groceries yet"
+                      : "No items match this filter"}
+                  </Text>
+                  <Text className="text-white/60 text-center text-xs mt-2 leading-4">
+                    Add items with the + button below to get started.
+                  </Text>
                 </View>
-              </View>
-            ))}
-          </ScrollView>
+              </LinearGradient>
+            </View>
+          ) : (
+            <ScrollView
+              className="mt-3 px-4 z-10"
+              contentContainerStyle={{ paddingBottom: 140 }}
+            >
+              {visibleGroceries.map((item) => {
+                const isDone = completedIds.includes(item.id!);
+                return (
+                  <View
+                    key={item.id}
+                    style={[styles.glassCard, { overflow: "hidden" }]}
+                    className="mb-3"
+                    accessibilityRole="summary"
+                    accessibilityLabel={`${item.name}, quantity ${item.quantity}, ${
+                      isDone ? "completed" : "active"
+                    }`}
+                  >
+                    {/* Left status accent */}
+                    <LinearGradient
+                      colors={
+                        isDone ? ["#16a34a", "#4ade80"] : ["#6366f1", "#8b5cf6"]
+                      }
+                      style={{
+                        position: "absolute",
+                        left: 0,
+                        top: 0,
+                        bottom: 0,
+                        width: 6,
+                      }}
+                    />
+                    <View className="p-4 flex-row justify-between items-center">
+                      <View style={{ flex: 1, paddingRight: 12 }}>
+                        <Text
+                          className={`text-lg font-semibold ${
+                            isDone ? "text-green-300" : "text-white"
+                          }`}
+                          style={{
+                            textDecorationLine: isDone
+                              ? "line-through"
+                              : "none",
+                          }}
+                        >
+                          {item.name}
+                        </Text>
+                        <Text className="text-xs text-gray-200/70 mt-1">
+                          Qty: {item.quantity}
+                        </Text>
+                        <View className="mt-2">
+                          <Text
+                            className={`text-[10px] tracking-wide px-2 py-1 rounded-full self-start ${
+                              isDone
+                                ? "bg-green-500/20 text-green-300"
+                                : "bg-white/15 text-white/80"
+                            }`}
+                          >
+                            {isDone ? "Completed" : "In progress"}
+                          </Text>
+                        </View>
+                      </View>
 
-          {/* Bottom Section */}
+                      <View className="flex-row items-center">
+                        {/* Edit */}
+                        <TouchableOpacity
+                          className="p-2 rounded-xl mr-2 bg-white/15"
+                          onPress={() =>
+                            router.push(`/(dashboard)/grocery/${item.id}`)
+                          }
+                          accessibilityLabel="Edit item"
+                        >
+                          <MaterialIcons name="edit" size={20} color="#fff" />
+                        </TouchableOpacity>
+
+                        {/* Delete */}
+                        <TouchableOpacity
+                          className="p-2 rounded-xl mr-3 bg-white/15"
+                          onPress={() => confirmDelete(item.id!)}
+                          accessibilityLabel="Delete item"
+                        >
+                          <MaterialIcons name="delete" size={20} color="#fff" />
+                        </TouchableOpacity>
+
+                        {/* Complete toggle */}
+                        <Pressable
+                          onPress={() => toggleComplete(item.id!)}
+                          className={`rounded-full border-2 ${
+                            isDone
+                              ? "border-green-400 bg-green-500/30"
+                              : "border-white/40 bg-white/10"
+                          } p-2`}
+                          accessibilityRole="checkbox"
+                          accessibilityState={{ checked: isDone }}
+                        >
+                          <MaterialIcons
+                            name="check"
+                            size={18}
+                            color={isDone ? "#bbf7d0" : "#ffffff"}
+                          />
+                        </Pressable>
+                      </View>
+                    </View>
+                  </View>
+                );
+              })}
+            </ScrollView>
+          )}
+
+          {/* Bottom Action & Progress */}
           <View className="p-4 z-10">
             <TouchableOpacity
-              className="bg-purple-700 py-4 rounded-2xl mb-3 flex-row justify-center items-center"
+              className="py-4 rounded-2xl mb-4 flex-row justify-center items-center"
               onPress={handleFinishAll}
+              disabled={!groceries.length}
+              style={{
+                opacity: groceries.length ? 1 : 0.4,
+                overflow: "hidden",
+              }}
             >
+              <LinearGradient
+                colors={["#7e22ce", "#9333ea", "#6366f1"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={{
+                  ...StyleSheet.absoluteFillObject,
+                  borderRadius: 20,
+                }}
+              />
               <MaterialIcons name="done-all" size={22} color="#fff" />
               <Text className="ml-2 text-white font-semibold text-lg">
                 Finish All
               </Text>
             </TouchableOpacity>
 
-            {/* Progress Bar */}
-            <View className="h-4 bg-gray-400 rounded-full overflow-hidden">
+            {/* Animated Progress Bar */}
+            <View
+              className="h-5 bg-white/15 rounded-full overflow-hidden"
+              style={{ padding: 2 }}
+              onLayout={(e) => setBarWidth(e.nativeEvent.layout.width - 4)}
+            >
+              <Animated.View
+                style={{
+                  height: "100%",
+                  width: barWidth
+                    ? progressAnim.interpolate({
+                        inputRange: [0, 100],
+                        outputRange: [0, barWidth],
+                      })
+                    : 0,
+                  borderRadius: 14,
+                  overflow: "hidden",
+                }}
+              >
+                <LinearGradient
+                  colors={["#22c55e", "#16a34a", "#15803d"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={{ flex: 1 }}
+                />
+              </Animated.View>
               <View
-                className="h-4 bg-green-500 rounded-full"
-                style={{ width: `${progress}%` }}
-              />
+                style={{
+                  position: "absolute",
+                  left: 0,
+                  right: 0,
+                  top: 0,
+                  bottom: 0,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+                pointerEvents="none"
+              >
+                <Text className="text-white/80 text-[10px] font-semibold">
+                  {Math.round(progress)}%
+                </Text>
+              </View>
             </View>
           </View>
 
           {/* Floating Add Button */}
           <View className="absolute bottom-24 right-6 z-20">
             <Pressable
-              className="bg-black rounded-full mb-5 p-5 shadow-lg"
+              className="rounded-full shadow-lg"
               onPress={() => router.push("/(dashboard)/grocery/new")}
+              accessibilityLabel="Add new grocery"
+              style={{ width: 66, height: 66 }}
             >
-              <MaterialIcons name="add" size={28} color="#fff" />
+              <LinearGradient
+                colors={["#000000", "#3f3f46"]}
+                style={{
+                  flex: 1,
+                  borderRadius: 999,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <MaterialIcons name="add" size={32} color="#fff" />
+              </LinearGradient>
             </Pressable>
           </View>
         </View>

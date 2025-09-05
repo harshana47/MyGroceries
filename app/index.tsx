@@ -1,8 +1,18 @@
 // app/landing.tsx
+import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import { LogIn, ShoppingCart, UserPlus } from "lucide-react-native";
+import {
+  CheckCircle2,
+  LogIn,
+  ShieldCheck,
+  ShoppingCart,
+  Sparkles,
+  UserPlus,
+} from "lucide-react-native";
 import React from "react";
 import {
+  Animated,
+  Easing,
   ImageBackground,
   KeyboardAvoidingView,
   Platform,
@@ -13,66 +23,228 @@ import {
 } from "react-native";
 
 export default function Landing() {
+  // Animations
+  const headerAnim = React.useRef(new Animated.Value(0)).current;
+  const cardAnim = React.useRef(new Animated.Value(0)).current;
+  const footerAnim = React.useRef(new Animated.Value(0)).current;
+
+  React.useEffect(() => {
+    Animated.stagger(140, [
+      Animated.timing(headerAnim, {
+        toValue: 1,
+        duration: 600,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.spring(cardAnim, {
+        toValue: 1,
+        friction: 8,
+        tension: 60,
+        useNativeDriver: true,
+      }),
+      Animated.timing(footerAnim, {
+        toValue: 1,
+        duration: 500,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
+
   return (
     <ImageBackground
       source={require("../assets/images/man.jpg")} // same background as login
       resizeMode="cover"
       style={{ flex: 1 }}
     >
+      {/* Gradient overlay layer */}
+      <View style={StyleSheet.absoluteFill}>
+        <LinearGradient
+          colors={["rgba(0,0,0,0.15)", "rgba(0,0,0,0.75)"]}
+          start={{ x: 0.2, y: 0 }}
+          end={{ x: 0.8, y: 1 }}
+          style={{ flex: 1 }}
+        />
+      </View>
+
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         className="flex-1 px-6 py-10 justify-between"
       >
         {/* Header / Logo */}
-        <View className="items-center mt-14">
-          <View className="p-6 rounded-3xl">
-            <ShoppingCart size={80} color="white" />
+        <Animated.View
+          style={{
+            opacity: headerAnim,
+            transform: [
+              {
+                translateY: headerAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [24, 0],
+                }),
+              },
+            ],
+          }}
+          className="items-center mt-14"
+        >
+          <View
+            style={{
+              padding: 20,
+              borderRadius: 32,
+              backgroundColor: "rgba(255,255,255,0.08)",
+              borderWidth: 1,
+              borderColor: "rgba(255,255,255,0.15)",
+            }}
+          >
+            <ShoppingCart size={68} color="white" />
           </View>
-          <Text className="text-white text-5xl font-extrabold">
+          <Text className="text-white text-5xl font-extrabold mt-1 tracking-tight">
             MyGroceries
           </Text>
-          <Text className="text-white text-center mt-1 text-base">
+          <Text className="text-white/80 text-center mt-2 text-base leading-5">
             Shop smarter. Stay organized.
           </Text>
-        </View>
+        </Animated.View>
 
         {/* Main Card */}
-        <View
-          style={styles.glassCard}
-          className="rounded-3xl p-8 mb-4 shadow-lg"
+        <Animated.View
+          style={{
+            opacity: cardAnim,
+            transform: [
+              {
+                translateY: cardAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [40, 0],
+                }),
+              },
+              {
+                scale: cardAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0.96, 1],
+                }),
+              },
+            ],
+          }}
         >
-          <Text className="text-black text-3xl font-bold mb-2">Welcome 👋</Text>
-          <Text className="text-gray-1000  text-base font-semibold mb-6">
-            Your smart grocery companion. Start exploring and organizing now!
-          </Text>
-
-          {/* Login Button */}
-          <TouchableOpacity
-            onPress={() => router.push("../login")}
-            className="flex-row items-center bg-black px-6 py-4 rounded-2xl mb-4 justify-center"
+          <LinearGradient
+            colors={[
+              "rgba(255,255,255,0.55)",
+              "rgba(255,255,255,0.38)",
+              "rgba(255,255,255,0.32)",
+            ]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.glassOuter}
           >
-            <LogIn size={22} color="white" />
-            <Text className="text-white font-semibold text-lg ml-2">Login</Text>
-          </TouchableOpacity>
+            <View style={styles.glassInner}>
+              <Text
+                style={{
+                  fontSize: 30,
+                  fontWeight: "800",
+                  color: "#111827",
+                  marginBottom: 6,
+                  letterSpacing: 0.5,
+                }}
+              >
+                Welcome 👋
+              </Text>
+              <Text
+                style={{
+                  color: "#374151",
+                  fontSize: 15,
+                  fontWeight: "500",
+                  lineHeight: 22,
+                  marginBottom: 2,
+                }}
+              >
+                Your smart grocery companion. Start exploring and organizing
+                now!
+              </Text>
 
-          {/* Sign Up Button */}
-          <TouchableOpacity
-            onPress={() => router.push("../signup")}
-            className="flex-row items-center bg-black px-6 py-4 rounded-2xl justify-center"
-          >
-            <UserPlus size={22} color="white" />
-            <Text className="text-white font-semibold text-lg ml-2">
-              Sign Up
-            </Text>
-          </TouchableOpacity>
-        </View>
+              {/* Feature bullets */}
+              <View style={{ marginBottom: 20 }}>
+                {[
+                  {
+                    icon: <CheckCircle2 size={18} color="#059669" />,
+                    text: "Track & complete items effortlessly",
+                  },
+                  {
+                    icon: <Sparkles size={18} color="#7e22ce" />,
+                    text: "Modern, fast & intuitive experience",
+                  },
+                  {
+                    icon: <ShieldCheck size={18} color="#2563eb" />,
+                    text: "Secure & synced with the cloud",
+                  },
+                ].map((f, idx) => (
+                  <View key={idx} style={styles.featureRow}>
+                    <View style={styles.featureIconWrap}>{f.icon}</View>
+                    <Text style={styles.featureText}>{f.text}</Text>
+                  </View>
+                ))}
+              </View>
+
+              {/* Login Button */}
+              <TouchableOpacity
+                onPress={() => router.push("../login")}
+                activeOpacity={0.85}
+                style={styles.primaryButton}
+              >
+                <LinearGradient
+                  colors={["#18181b", "#27272a", "#3f3f46"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.primaryGradient}
+                >
+                  <LogIn size={22} color="white" />
+                  <Text style={styles.primaryButtonText}>Login</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+
+              {/* Sign Up Button */}
+              <TouchableOpacity
+                onPress={() => router.push("../signup")}
+                activeOpacity={0.85}
+                style={styles.secondaryButton}
+              >
+                <LinearGradient
+                  colors={["#7e22ce", "#9333ea", "#a855f7"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.secondaryGradient}
+                >
+                  <UserPlus size={22} color="#fff" />
+                  <Text style={styles.secondaryButtonText}>Sign Up</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+          </LinearGradient>
+        </Animated.View>
 
         {/* Footer */}
-        <View className="items-center mb-6">
-          <Text className="text-white/80 text-m">
+        <Animated.View
+          style={{
+            opacity: footerAnim,
+            transform: [
+              {
+                translateY: footerAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [16, 0],
+                }),
+              },
+            ],
+          }}
+          className="items-center mb-6"
+        >
+          <Text
+            style={{
+              color: "rgba(255,255,255,0.72)",
+              fontSize: 13,
+              letterSpacing: 0.6,
+            }}
+          >
             Organize your groceries with ease 🛒
           </Text>
-        </View>
+        </Animated.View>
       </KeyboardAvoidingView>
     </ImageBackground>
   );
@@ -80,6 +252,7 @@ export default function Landing() {
 
 const styles = StyleSheet.create({
   glassCard: {
+    // (kept for reference if used elsewhere)
     backgroundColor: "rgba(255,255,255,0.59)",
     borderRadius: 24,
     borderWidth: 1,
@@ -89,5 +262,81 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.12,
     shadowRadius: 20,
+  },
+  glassOuter: {
+    borderRadius: 28,
+    padding: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 18 },
+    shadowOpacity: 0.25,
+    shadowRadius: 28,
+    elevation: 10,
+    marginBottom: 8,
+  },
+  glassInner: {
+    borderRadius: 26,
+    backgroundColor: "rgba(255,255,255,0.55)",
+    padding: 28,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.55)",
+    // backdropFilter: "blur(18px)" as any, // removed, not supported in RN
+  },
+  featureRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  featureIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "rgba(0,0,0,0.06)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 10,
+  },
+  featureText: {
+    flex: 1,
+    fontSize: 13.5,
+    color: "#374151",
+    fontWeight: "600",
+    letterSpacing: 0.3,
+  },
+  primaryButton: {
+    borderRadius: 20,
+    overflow: "hidden",
+    marginBottom: 14,
+  },
+  primaryGradient: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 15,
+    borderRadius: 20,
+  },
+  primaryButtonText: {
+    color: "white",
+    fontSize: 17,
+    fontWeight: "700",
+    marginLeft: 8,
+    letterSpacing: 0.5,
+  },
+  secondaryButton: {
+    borderRadius: 20,
+    overflow: "hidden",
+  },
+  secondaryGradient: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 15,
+    borderRadius: 20,
+  },
+  secondaryButtonText: {
+    color: "white",
+    fontSize: 17,
+    fontWeight: "700",
+    marginLeft: 8,
+    letterSpacing: 0.5,
   },
 });

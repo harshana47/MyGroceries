@@ -1,5 +1,6 @@
 import { auth, db } from "@/firebase";
 import { MaterialIcons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { doc, getDoc } from "firebase/firestore";
 import React, { useEffect, useRef, useState } from "react";
@@ -13,6 +14,8 @@ import {
   TouchableWithoutFeedback,
   View,
 } from "react-native";
+
+const CARD_MIN_HEIGHT = 120;
 
 const getRgba = (color: string, opacity: number) => {
   if (color.startsWith("#")) {
@@ -35,6 +38,7 @@ const AnimatedCard = ({
   onPress,
   iconColor,
   textColor,
+  gradientColors,
 }: {
   color: string;
   icon: keyof typeof MaterialIcons.glyphMap;
@@ -42,6 +46,7 @@ const AnimatedCard = ({
   onPress: () => void;
   iconColor?: string;
   textColor?: string;
+  gradientColors?: readonly [string, string, ...string[]];
 }) => {
   const scale = useRef(new Animated.Value(1)).current;
 
@@ -69,19 +74,38 @@ const AnimatedCard = ({
     >
       <Animated.View
         style={[
-          styles.card,
+          styles.cardWrapper,
           {
-            backgroundColor: getRgba(color, 0.95),
+            minHeight: CARD_MIN_HEIGHT,
             transform: [{ scale }],
           },
         ]}
       >
-        <MaterialIcons name={icon} size={36} color={iconColor || "white"} />
-        <Text
-          style={[styles.cardText, textColor ? { color: textColor } : null]}
+        <LinearGradient
+          colors={
+            gradientColors || [
+              getRgba(color, 0.85),
+              getRgba(color === "black" ? "#1f2937" : color, 0.55),
+            ]
+          }
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.cardGradient}
         >
-          {label}
-        </Text>
+          <View style={styles.cardContent}>
+            <MaterialIcons
+              name={icon}
+              size={36}
+              color={iconColor || "white"}
+              style={{ marginBottom: 6 }}
+            />
+            <Text
+              style={[styles.cardText, textColor ? { color: textColor } : null]}
+            >
+              {label}
+            </Text>
+          </View>
+        </LinearGradient>
       </Animated.View>
     </TouchableWithoutFeedback>
   );
@@ -89,7 +113,21 @@ const AnimatedCard = ({
 
 export default function Home() {
   const [photoURL, setPhotoURL] = useState<string | null>(null);
+  const [greeting, setGreeting] = useState("");
   const user = auth.currentUser;
+  const fadeIn = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const hour = new Date().getHours();
+    setGreeting(
+      hour < 12 ? "Good Morning" : hour < 18 ? "Good Afternoon" : "Good Evening"
+    );
+    Animated.timing(fadeIn, {
+      toValue: 1,
+      duration: 700,
+      useNativeDriver: true,
+    }).start();
+  }, []);
 
   useEffect(() => {
     const fetchProfilePhoto = async () => {
@@ -127,26 +165,56 @@ export default function Home() {
         }}
       />
 
-      <View style={{ flex: 1, paddingHorizontal: 20, paddingTop: 30 }}>
+      <Animated.View
+        style={{
+          flex: 1,
+          paddingHorizontal: 20,
+          paddingTop: 30,
+          opacity: fadeIn,
+        }}
+      >
         {/* Header */}
         <View
           style={{
             flexDirection: "row",
             justifyContent: "space-between",
             alignItems: "center",
-            marginBottom: 40,
+            marginBottom: 34,
           }}
         >
-          <Text
-            style={{
-              fontSize: 32,
-              fontWeight: "800",
-              color: "white",
-              letterSpacing: 1,
-            }}
-          >
-            My Space
-          </Text>
+          <View>
+            <Text
+              style={{
+                fontSize: 14,
+                color: "rgba(255,255,255,0.65)",
+                letterSpacing: 0.5,
+                fontWeight: "500",
+              }}
+            >
+              {greeting}
+            </Text>
+            <Text
+              style={{
+                fontSize: 34,
+                fontWeight: "800",
+                color: "white",
+                letterSpacing: 1,
+                marginTop: 2,
+              }}
+            >
+              My Space
+            </Text>
+            <Text
+              style={{
+                fontSize: 12,
+                color: "rgba(255,255,255,0.45)",
+                marginTop: 6,
+                letterSpacing: 0.5,
+              }}
+            >
+              Manage your daily essentials effortlessly
+            </Text>
+          </View>
 
           <View
             style={{
@@ -182,35 +250,39 @@ export default function Home() {
         </View>
 
         {/* Cards */}
-        <View style={{ flex: 1, marginTop: 30 }}>
-          <View style={{ flexDirection: "row", marginBottom: 20 }}>
+        <View style={{ flex: 1, marginTop: 10 }}>
+          <View style={{ flexDirection: "row", marginBottom: 18 }}>
             <AnimatedCard
               color="black"
+              gradientColors={["#111827", "#1e293b", "#4c1d95"]}
               icon="shopping-cart"
               label="Grocery"
               onPress={() => router.push("/grocery")}
             />
             <AnimatedCard
               color="#d7d9db"
+              gradientColors={["#f1f5f9", "#e2e8f0", "#cbd5e1"]}
               icon="map"
               label="Map"
               onPress={() => router.push("maps/map")}
               iconColor="#000"
-              textColor="#000"
+              textColor="#111"
             />
           </View>
 
-          <View style={{ flexDirection: "row", marginBottom: 20 }}>
+          <View style={{ flexDirection: "row", marginBottom: 18 }}>
             <AnimatedCard
               color="#d7d9db"
+              gradientColors={["#f8fafc", "#e2e8f0", "#cbd5e1"]}
               icon="history"
               label="History"
               onPress={() => router.push("/history")}
               iconColor="#000"
-              textColor="#000"
+              textColor="#111"
             />
             <AnimatedCard
               color="black"
+              gradientColors={["#0f172a", "#1e293b", "#334155"]}
               icon="person"
               label="Profile"
               onPress={() => router.push("/profiles/profile")}
@@ -220,31 +292,54 @@ export default function Home() {
           <View style={{ flexDirection: "row" }}>
             <AnimatedCard
               color="#0ea5e9"
+              gradientColors={["#0369a1", "#0284c7", "#0ea5e9"]}
               icon="support"
               label="Support"
               onPress={() => router.push("/support")}
             />
+            <AnimatedCard
+              color="#7e22ce"
+              gradientColors={["#581c87", "#7e22ce", "#a855f7"]}
+              icon="settings"
+              label="Settings"
+              onPress={() => router.push("/settings")}
+            />
           </View>
         </View>
-      </View>
+      </Animated.View>
     </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
+  cardWrapper: {
     flex: 1,
     marginHorizontal: 8,
-    padding: 24,
-    borderRadius: 20,
+    borderRadius: 22,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.25,
+    shadowRadius: 18,
+    elevation: 6,
+    minHeight: CARD_MIN_HEIGHT, // enforce visible height
+    overflow: "hidden",
+  },
+  cardGradient: {
+    flex: 1,
+    borderRadius: 22,
+    padding: 1,
+    height: "100%", // fill wrapper height
+  },
+  cardContent: {
+    flex: 1,
+    borderRadius: 21,
+    padding: 22,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.04)",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.2)",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
+    borderColor: "rgba(255,255,255,0.15)",
+    // remove flex:1 to prevent unexpected shrink
   },
   cardText: {
     marginTop: 6,

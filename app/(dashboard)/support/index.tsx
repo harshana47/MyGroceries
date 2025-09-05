@@ -1,20 +1,117 @@
 // app/support/support.tsx
 import { FontAwesome5, Ionicons, MaterialIcons } from "@expo/vector-icons";
-import { BlurView } from "expo-blur";
+import { LinearGradient } from "expo-linear-gradient";
 import React, { useState } from "react";
 import {
   ImageBackground,
+  LayoutAnimation,
+  Linking,
+  Platform,
   ScrollView,
+  StyleSheet,
   Text,
   TouchableOpacity,
+  TouchableWithoutFeedback,
+  UIManager,
   View,
 } from "react-native";
 
+if (
+  Platform.OS === "android" &&
+  UIManager.setLayoutAnimationEnabledExperimental
+) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
+// Reusable gradient accordion section
+const SupportSection = ({
+  id,
+  title,
+  icon,
+  color,
+  open,
+  onToggle,
+  children,
+}: {
+  id: string;
+  title: string;
+  icon: React.ReactNode;
+  color: string;
+  open: boolean;
+  onToggle: (id: string) => void;
+  children: React.ReactNode;
+}) => {
+  return (
+    <TouchableWithoutFeedback
+      onPress={() => {
+        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+        onToggle(id);
+      }}
+    >
+      <View style={{ marginBottom: 18 }}>
+        <LinearGradient
+          colors={[color, color + "cc", "#ffffff22"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.sectionWrapper}
+        >
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionIconRow}>
+              <View
+                style={[styles.iconCircle, { backgroundColor: "#ffffff22" }]}
+              >
+                {icon}
+              </View>
+              <Text style={styles.sectionTitle}>{title}</Text>
+            </View>
+            <MaterialIcons
+              name={open ? "keyboard-arrow-up" : "keyboard-arrow-down"}
+              size={30}
+              color="#fff"
+              style={{ opacity: 0.9 }}
+            />
+          </View>
+          {open && <View style={styles.sectionBody}>{children}</View>}
+        </LinearGradient>
+      </View>
+    </TouchableWithoutFeedback>
+  );
+};
+
 export default function Support() {
   const [openSection, setOpenSection] = useState<string | null>(null);
+  const sections = [
+    {
+      id: "instructions",
+      title: "Instructions",
+      icon: <Ionicons name="document-text" size={22} color="#fff" />,
+      color: "#6366f1",
+      body: (
+        <Text style={styles.bodyText}>
+          1. Login or Sign up to start using the app.{"\n"}
+          2. Add groceries using the Grocery tab.{"\n"}
+          3. Track completed lists in History.{"\n"}
+          4. Use Map & Support for more utilities.{"\n"}
+          5. Manage your profile & preferences anytime.
+        </Text>
+      ),
+    },
+    {
+      id: "feedback",
+      title: "Feedback",
+      icon: <FontAwesome5 name="comment-dots" size={18} color="#fff" />,
+      color: "#8b5cf6",
+      body: (
+        <Text style={styles.bodyText}>
+          We value your feedback. Share suggestions or report issues to help us
+          improve the experience. Thank you for contributing!
+        </Text>
+      ),
+    },
+  ];
 
-  const toggleSection = (section: string) => {
-    setOpenSection(openSection === section ? null : section);
+  const toggleSection = (id: string) => {
+    setOpenSection(openSection === id ? null : id);
   };
 
   return (
@@ -23,119 +120,214 @@ export default function Support() {
       className="flex-1"
       resizeMode="cover"
     >
-      {/* Overlay to make cards pop */}
-      <View className="absolute inset-0 bg-black/40 border-r-8" />
+      {/* Dark overlay refined */}
+      <View className="absolute inset-0">
+        <LinearGradient
+          colors={["#000000d8", "#000000aa", "#111827dd"]}
+          style={{ flex: 1 }}
+        />
+      </View>
 
       <ScrollView
-        contentContainerStyle={{ padding: 16, paddingTop: 58 }}
+        contentContainerStyle={{
+          padding: 20,
+          paddingTop: 100,
+          paddingBottom: 60,
+        }}
         className="flex-1"
       >
-        <Text className="text-3xl text-white font-extrabold mb-6 mt-10 pb-10">
-          Support Center
-        </Text>
+        {/* Header */}
+        <View style={{ marginBottom: 34 }}>
+          <Text style={styles.headerTitle}>Support Center</Text>
+          <Text style={styles.headerSubtitle}>
+            Help, guidance & ways to reach us
+          </Text>
+          <View style={styles.headerAccent} />
+        </View>
 
-        {/* Instructions */}
-        <BlurView
-          intensity={90}
-          tint="light"
-          className="mb-4 rounded-3xl border border-white/25 p-4 shadow-lg"
-        >
-          <TouchableOpacity
-            className="flex-row justify-between items-center"
-            onPress={() => toggleSection("instructions")}
+        {/* Sections */}
+        {sections.map((s) => (
+          <SupportSection
+            key={s.id}
+            id={s.id}
+            title={s.title}
+            icon={s.icon}
+            color={s.color}
+            open={openSection === s.id}
+            onToggle={toggleSection}
           >
-            <View className="flex-row items-center space-x-3">
-              <Ionicons name="document-text" size={28} color="#22c55e" />
-              <Text className="text-lg font-semibold text-gray-900 pl-2">
-                Instructions
-              </Text>
-            </View>
-            {openSection === "instructions" ? (
-              <MaterialIcons name="keyboard-arrow-up" size={28} color="#111" />
-            ) : (
-              <MaterialIcons
-                name="keyboard-arrow-down"
-                size={28}
-                color="#111"
-              />
-            )}
-          </TouchableOpacity>
-          {openSection === "instructions" && (
-            <View className="mt-3">
-              <Text className="text-gray-800 text-base leading-6 font-semibold pl-3">
-                1. Login or Sign up to start using the app.{"\n"}
-                2. Add groceries using the Grocery tab.{"\n"}
-                3. Track your history and view map locations.{"\n"}
-                4. Visit your profile to manage account settings.
-              </Text>
-            </View>
-          )}
-        </BlurView>
+            {s.body}
+          </SupportSection>
+        ))}
 
-        {/* Feedback */}
-        <BlurView
-          intensity={90}
-          tint="light"
-          className="mb-4 rounded-3xl border border-white/25 p-4 shadow-lg"
+        {/* Contact Card */}
+        <LinearGradient
+          colors={["#0ea5e9", "#0284c7", "#0369a1"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.contactWrapper}
         >
-          <TouchableOpacity
-            className="flex-row justify-between items-center"
-            onPress={() => toggleSection("feedback")}
-          >
-            <View className="flex-row items-center space-x-3">
-              <FontAwesome5 name="comment-dots" size={24} color="#3b82f6" />
-              <Text className="text-lg font-semibold text-gray-900 pl-2">
-                Feedback
-              </Text>
+          <View style={styles.contactHeaderRow}>
+            <View style={styles.sectionIconRow}>
+              <View
+                style={[styles.iconCircle, { backgroundColor: "#ffffff22" }]}
+              >
+                <MaterialIcons name="call" size={22} color="#fff" />
+              </View>
+              <Text style={styles.contactTitle}>Contact Us</Text>
             </View>
-            {openSection === "feedback" ? (
-              <MaterialIcons name="keyboard-arrow-up" size={28} color="#111" />
-            ) : (
-              <MaterialIcons
-                name="keyboard-arrow-down"
-                size={28}
-                color="#111"
-              />
-            )}
-          </TouchableOpacity>
-          {openSection === "feedback" && (
-            <View className="mt-3">
-              <Text className="text-gray-800 text-base leading-6 font-semibold pl-3">
-                We value your feedback! Please share your suggestions or report
-                any issues you encounter.
-              </Text>
+          </View>
+          <View style={styles.contactBody}>
+            <Text style={styles.contactLine}>Email: support@example.com</Text>
+            <Text style={styles.contactLine}>Phone: +123 456 7890</Text>
+            <Text style={styles.contactLine}>
+              Address: 123 Main Street, City
+            </Text>
+            <Text style={styles.contactLine}>Website: mygroceryapp.com</Text>
+            <View style={styles.quickActionsRow}>
+              <TouchableOpacity
+                style={styles.actionChip}
+                onPress={() =>
+                  Linking.openURL("mailto:pabodhaharshana15@gmail.com")
+                }
+              >
+                <MaterialIcons name="email" size={16} color="#fff" />
+                <Text style={styles.actionChipText}>Email</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.actionChip}
+                onPress={() => Linking.openURL("tel:+94701969102")}
+              >
+                <MaterialIcons name="phone" size={16} color="#fff" />
+                <Text style={styles.actionChipText}>Call</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.actionChip}
+                onPress={() => Linking.openURL("https://mygroceryapp.com")}
+              >
+                <MaterialIcons name="open-in-new" size={16} color="#fff" />
+                <Text style={styles.actionChipText}>Visit</Text>
+              </TouchableOpacity>
             </View>
-          )}
-        </BlurView>
-
-        {/* Contact Us */}
-        <BlurView
-          intensity={90}
-          tint="light"
-          className="rounded-3xl border border-white/25 p-4 shadow-lg"
-        >
-          <View className="flex-row items-center space-x-3 mb-2">
-            <MaterialIcons name="call" size={28} color="#f59e0b" />
-            <Text className="text-lg font-semibold text-gray-900 pl-2">
-              Contact Us
-            </Text>
           </View>
-          <View>
-            <Text className="text-gray-800 text-base leading-6 font-semibold pl-3">
-              Email: support@example.com
-            </Text>
-            <Text className="text-gray-800 text-base leading-6 font-semibold pl-3">
-              Phone: +123 456 7890
-            </Text>
-            <Text className="text-gray-800 text-base leading-6 font-semibold pl-3">
-              Address: 123 Main Street, City, Country
-            </Text>
-            <Text className="text-gray-800 text-base leading-6 font-semibold pl-3">
-              Website: www.mygroceryapp.com
-            </Text>
-          </View>
-        </BlurView>
+        </LinearGradient>
       </ScrollView>
     </ImageBackground>
   );
 }
+
+// Styles additive (kept separate for clarity)
+const styles = StyleSheet.create({
+  sectionWrapper: {
+    borderRadius: 26,
+    padding: 1.5,
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingHorizontal: 18,
+    paddingVertical: 16,
+    alignItems: "center",
+  },
+  sectionIconRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  iconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#fff",
+    letterSpacing: 0.5,
+  },
+  sectionBody: {
+    paddingHorizontal: 22,
+    paddingBottom: 18,
+    paddingTop: 4,
+  },
+  bodyText: {
+    color: "rgba(255,255,255,0.85)",
+    fontSize: 13.5,
+    lineHeight: 20,
+    fontWeight: "500",
+    letterSpacing: 0.3,
+  },
+  headerTitle: {
+    fontSize: 34,
+    fontWeight: "800",
+    color: "#fff",
+    letterSpacing: 0.8,
+  },
+  headerSubtitle: {
+    color: "rgba(255,255,255,0.65)",
+    marginTop: 6,
+    fontSize: 13,
+    fontWeight: "500",
+    letterSpacing: 0.4,
+  },
+  headerAccent: {
+    height: 4,
+    width: 72,
+    backgroundColor: "#6366f1",
+    borderRadius: 4,
+    marginTop: 14,
+  },
+  contactWrapper: {
+    borderRadius: 28,
+    padding: 2,
+    marginTop: 12,
+    marginBottom: 40,
+  },
+  contactHeaderRow: {
+    paddingHorizontal: 20,
+    paddingTop: 18,
+    paddingBottom: 4,
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  contactTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#fff",
+    letterSpacing: 0.5,
+  },
+  contactBody: {
+    paddingHorizontal: 24,
+    paddingBottom: 22,
+    paddingTop: 12,
+  },
+  contactLine: {
+    color: "rgba(255,255,255,0.9)",
+    fontSize: 13.5,
+    fontWeight: "500",
+    marginBottom: 6,
+    letterSpacing: 0.4,
+  },
+  quickActionsRow: {
+    flexDirection: "row",
+    marginTop: 14,
+  },
+  actionChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.15)",
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginRight: 10,
+  },
+  actionChipText: {
+    color: "#fff",
+    fontSize: 13,
+    fontWeight: "600",
+    marginLeft: 6,
+    letterSpacing: 0.3,
+  },
+});
