@@ -33,7 +33,6 @@ const GroceryListScreen = () => {
   const router = useRouter();
   const { showLoader, hideLoader } = useLoader();
 
-  // Animated progress
   const progressAnim = useRef(new Animated.Value(0)).current;
   const [barWidth, setBarWidth] = useState(0);
 
@@ -71,7 +70,6 @@ const GroceryListScreen = () => {
     }).start();
   }, [progress]);
 
-  // Filtered list
   const visibleGroceries = groceries.filter((g) => {
     if (filter === "completed") return completedIds.includes(g.id!);
     if (filter === "active") return !completedIds.includes(g.id!);
@@ -105,7 +103,6 @@ const GroceryListScreen = () => {
     try {
       showLoader();
       await updateGrocery(id, { completed: newCompleted });
-      // Local state update for instant UI feedback
       setGroceries((prev) =>
         prev.map((item) =>
           item.id === id ? { ...item, completed: newCompleted } : item
@@ -140,13 +137,11 @@ const GroceryListScreen = () => {
 
   return (
     <View style={{ flex: 1 }}>
-      {/* Background keeps original image */}
       <ImageBackground
         source={require("../../../assets/images/purple.jpg")}
         style={{ flex: 1 }}
         resizeMode="cover"
       >
-        {/* Existing blur + dark overlay */}
         <BlurView intensity={60} tint="dark" style={StyleSheet.absoluteFill} />
         <View
           style={{
@@ -337,7 +332,7 @@ const GroceryListScreen = () => {
             </ScrollView>
           )}
 
-          {/* Bottom Action & Progress */}
+          {/* action anf progress */}
           <View className="p-4 z-10">
             <TouchableOpacity
               className="py-4 rounded-2xl mb-4 flex-row justify-center items-center"
@@ -363,7 +358,6 @@ const GroceryListScreen = () => {
               </Text>
             </TouchableOpacity>
 
-            {/* Animated Progress Bar */}
             <View
               className="h-5 bg-white/15 rounded-full overflow-hidden"
               style={{ padding: 2 }}

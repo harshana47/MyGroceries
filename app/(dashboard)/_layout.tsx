@@ -1,42 +1,80 @@
-import { MaterialIcons } from "@expo/vector-icons";
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
 import React from "react";
-
-const tabs = [
-  { name: "home", label: "Home", icon: "home-filled" },
-  { name: "grocery", label: "Grocery", icon: "shopping-cart" },
-  { name: "maps/map", label: "Map", icon: "map" },
-  { name: "history/index", label: "History", icon: "history" },
-  { name: "profiles/profile", label: "Profile", icon: "person" },
-  { name: "support/index", label: "Support", icon: "support" },
-] as const;
 
 export default function DashboardLayout() {
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: "#16a34a",
-        tabBarInactiveTintColor: "#9ca3af",
+        tabBarActiveTintColor: "#0ea5e9",
+        tabBarInactiveTintColor: "#94a3b8",
         tabBarStyle: {
-          backgroundColor: "#f8fafc",
-          borderTopWidth: 0,
-          elevation: 4,
+          backgroundColor: "#0f172a",
+          borderTopColor: "#1e293b",
+          paddingTop: 4,
+        },
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: "600",
+          letterSpacing: 0.4,
         },
       }}
     >
-      {tabs.map(({ name, icon, label }) => (
-        <Tabs.Screen
-          key={name}
-          name={name}
-          options={{
-            title: label,
-            tabBarIcon: ({ color, size }) => (
-              <MaterialIcons name={icon as any} color={color} size={size} />
-            ),
-          }}
-        />
-      ))}
+      <Tabs.Screen
+        name="home"
+        options={{
+          title: "Home",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="home" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="grocery"
+        options={{
+          title: "Grocery",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="cart" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="maps"
+        options={{
+          title: "Map",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="map" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="history"
+        options={{
+          title: "History",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="time" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="profiles"
+        options={{
+          title: "Profile",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="person-circle" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="support"
+        options={{
+          title: "Support",
+          tabBarIcon: ({ color, size }) => (
+            <MaterialIcons name="support" size={size} color={color} />
+          ),
+        }}
+      />
     </Tabs>
   );
 }

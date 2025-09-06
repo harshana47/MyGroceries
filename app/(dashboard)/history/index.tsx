@@ -67,9 +67,7 @@ const HistoryScreen = () => {
       style={{ flex: 1 }}
       resizeMode="cover"
     >
-      {/* Blur overlay */}
       <BlurView intensity={60} tint="dark" style={StyleSheet.absoluteFill} />
-      {/* Dark overlay */}
       <View
         style={{
           ...StyleSheet.absoluteFillObject,
@@ -84,7 +82,6 @@ const HistoryScreen = () => {
             <Text className="text-3xl font-bold text-white ml-3">History</Text>
           </View>
 
-          {/* Empty State */}
           {dateKeys.length === 0 && (
             <View
               style={{
@@ -137,7 +134,7 @@ const HistoryScreen = () => {
             const completedCount = items.filter((i) => i.completed).length;
             return (
               <View key={date} className="mb-8">
-                {/* Date Header */}
+                {/* date */}
                 <TouchableOpacity
                   activeOpacity={0.8}
                   onPress={() => toggleDate(date)}
@@ -225,7 +222,7 @@ const HistoryScreen = () => {
                           overflow: "hidden",
                         }}
                       >
-                        {/* Accent bar */}
+                        {/* accent bar */}
                         <View
                           style={{
                             position: "absolute",

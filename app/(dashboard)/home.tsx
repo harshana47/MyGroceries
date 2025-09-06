@@ -8,6 +8,7 @@ import {
   Animated,
   Image,
   ImageBackground,
+  Pressable,
   StatusBar,
   StyleSheet,
   Text,
@@ -30,7 +31,7 @@ const getRgba = (color: string, opacity: number) => {
   return `rgba(255,255,255,${opacity})`;
 };
 
-// Reusable animated card
+// animated card
 const AnimatedCard = ({
   color,
   icon,
@@ -154,7 +155,7 @@ export default function Home() {
       style={{ flex: 1 }}
       resizeMode="cover"
     >
-      {/* statusBar with black background */}
+      {/* status Bar with black background */}
       <StatusBar backgroundColor="black" barStyle="light-content" />
 
       {/* Overlay */}
@@ -228,10 +229,12 @@ export default function Home() {
             }}
           >
             {photoURL ? (
-              <Image
-                source={{ uri: photoURL }}
-                style={{ width: 48, height: 48, borderRadius: 24 }}
-              />
+              <Pressable onPress={() => router.push("/profiles")}>
+                <Image
+                  source={{ uri: photoURL }}
+                  style={{ width: 48, height: 48, borderRadius: 24 }}
+                />
+              </Pressable>
             ) : (
               <View
                 style={{
@@ -264,7 +267,7 @@ export default function Home() {
               gradientColors={["#f1f5f9", "#e2e8f0", "#cbd5e1"]}
               icon="map"
               label="Map"
-              onPress={() => router.push("maps/map")}
+              onPress={() => router.push("/map")}
               iconColor="#000"
               textColor="#111"
             />
@@ -285,24 +288,17 @@ export default function Home() {
               gradientColors={["#0f172a", "#1e293b", "#334155"]}
               icon="person"
               label="Profile"
-              onPress={() => router.push("/profiles/profile")}
+              onPress={() => router.push("/profile")}
             />
           </View>
 
           <View style={{ flexDirection: "row" }}>
             <AnimatedCard
               color="#0ea5e9"
-              gradientColors={["#0369a1", "#0284c7", "#0ea5e9"]}
+              gradientColors={["#0369a1", "#1e293b", "#0f172a"]}
               icon="support"
               label="Support"
               onPress={() => router.push("/support")}
-            />
-            <AnimatedCard
-              color="#7e22ce"
-              gradientColors={["#581c87", "#7e22ce", "#a855f7"]}
-              icon="settings"
-              label="Settings"
-              onPress={() => router.push("/settings")}
             />
           </View>
         </View>
@@ -321,14 +317,14 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 18,
     elevation: 6,
-    minHeight: CARD_MIN_HEIGHT, // enforce visible height
+    minHeight: CARD_MIN_HEIGHT,
     overflow: "hidden",
   },
   cardGradient: {
     flex: 1,
     borderRadius: 22,
     padding: 1,
-    height: "100%", // fill wrapper height
+    height: "100%",
   },
   cardContent: {
     flex: 1,
@@ -339,7 +335,6 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.04)",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.15)",
-    // remove flex:1 to prevent unexpected shrink
   },
   cardText: {
     marginTop: 6,

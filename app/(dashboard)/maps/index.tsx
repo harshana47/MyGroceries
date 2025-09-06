@@ -23,6 +23,7 @@ type Place = {
   latitude: number;
   longitude: number;
   vicinity?: string;
+  distanceKm?: number;
 };
 
 const FALLBACK_REGION: Region = {
@@ -89,47 +90,97 @@ const MapScreen = () => {
       setLoadingPlaces(true);
       setShowFallback(false);
       setApiStatus(null);
-      const radius = 6000; // widened search radius
-      // Expanded shop types using regex alternation
-      const url = `https://overpass-api.de/api/interpreter?data=[out:json][timeout:25];(nwr["shop"~"^(supermarket|convenience|grocery|mini_market|department_store|hypermarket|greengrocer)$"](around:${radius},${lat},${lng}););out geom;`;
-      const res = await fetch(url);
-      const data = await res.json();
-      if (data.elements && data.elements.length > 0) {
-        const mapped: Place[] = data.elements
-          .map((p: any) => {
-            const latitude = p.lat ?? p.center?.lat;
-            const longitude = p.lon ?? p.center?.lon;
-            if (latitude == null || longitude == null) return null;
-            const shopType = p.tags?.shop;
-            const defaultNameMap: Record<string, string> = {
-              convenience: "Convenience Store",
-              supermarket: "Supermarket",
-              grocery: "Grocery Store",
-              mini_market: "Mini Market",
-              department_store: "Department Store",
-              hypermarket: "Hypermarket",
-              greengrocer: "Greengrocer",
-            };
-            return {
-              id: p.id.toString(),
-              name: p.tags?.name || defaultNameMap[shopType] || "Store",
-              latitude,
-              longitude,
-              vicinity:
-                p.tags?.addr_full ||
-                p.tags?.addr_street ||
-                p.tags?.addr_city ||
-                "Unknown address",
-            };
-          })
-          .filter(Boolean);
-        setPlaces(mapped);
-        setApiStatus("OK");
-        setShowFallback(false);
-      } else {
-        setPlaces([]);
-        setApiStatus("NO_RESULTS");
-        setShowFallback(true);
+
+      const RADIUS_STEPS = [2000, 4000, 6000, 8000, 10000];
+      const MIN_RESULTS = 5;
+
+      const collected: Place[] = [];
+      for (let i = 0; i < RADIUS_STEPS.length; i++) {
+        const radius = RADIUS_STEPS[i];
+        // Expanded shop / amenity filters
+        const url = `https://overpass-api.de/api/interpreter?data=[out:json][timeout:25];
+          (
+            nwr["shop"~"^(supermarket|convenience|grocery|mini_market|department_store|hypermarket|greengrocer|mall|butcher|bakery|seafood)$"](around:${radius},${lat},${lng});
+            nwr["amenity"="marketplace"](around:${radius},${lat},${lng});
+          );
+          out geom;`;
+        const res = await fetch(url);
+        const data = await res.json();
+
+        if (data.elements && data.elements.length > 0) {
+          const batch: Place[] = data.elements
+            .map((p: any) => {
+              const latitude = p.lat ?? p.center?.lat;
+              const longitude = p.lon ?? p.center?.lon;
+              if (latitude == null || longitude == null) return null;
+              const shopType = p.tags?.shop;
+              const defaultNameMap: Record<string, string> = {
+                convenience: "Convenience Store",
+                supermarket: "Supermarket",
+                grocery: "Grocery Store",
+                mini_market: "Mini Market",
+                department_store: "Department Store",
+                hypermarket: "Hypermarket",
+                greengrocer: "Greengrocer",
+                mall: "Shopping Mall",
+                butcher: "Butcher",
+                bakery: "Bakery",
+                seafood: "Seafood Market",
+              };
+              return {
+                id: p.id.toString(),
+                name:
+                  p.tags?.name ||
+                  defaultNameMap[shopType] ||
+                  (p.tags?.amenity === "marketplace" ? "Marketplace" : "Store"),
+                latitude,
+                longitude,
+                vicinity:
+                  p.tags?.addr_full ||
+                  p.tags?.addr_street ||
+                  p.tags?.addr_city ||
+                  "Unknown address",
+              } as Place;
+            })
+            .filter(Boolean) as Place[];
+
+          // Merge & de-duplicate (by id)
+          const map = new Map<string, Place>();
+          [...collected, ...batch].forEach((pl) => {
+            map.set(pl.id, pl);
+          });
+          const merged = Array.from(map.values());
+
+          // Compute distance for each (once we have merged set)
+          merged.forEach((pl) => {
+            pl.distanceKm = haversine(lat, lng, pl.latitude, pl.longitude);
+          });
+
+          // Sort by nearest
+          merged.sort((a, b) => a.distanceKm! - b.distanceKm!);
+
+          collected.splice(0, collected.length, ...merged);
+
+          if (collected.length >= MIN_RESULTS) {
+            setPlaces(collected);
+            setApiStatus("OK");
+            setShowFallback(false);
+            return;
+          }
+          // else continue to next larger radius
+        }
+        // If last radius and still insufficient
+        if (i === RADIUS_STEPS.length - 1) {
+          if (collected.length > 0) {
+            setPlaces(collected);
+            setApiStatus("PARTIAL");
+            setShowFallback(false);
+          } else {
+            setPlaces([]);
+            setApiStatus("NO_RESULTS");
+            setShowFallback(true);
+          }
+        }
       }
     } catch {
       setErrorMsg("Failed to fetch places.");
@@ -146,14 +197,8 @@ const MapScreen = () => {
 <html>
 <head>
 <meta charset="UTF-8" />
-<meta
-  name="viewport"
-  content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"
-/>
-<link
-  rel="stylesheet"
-  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <style>
 html,body,#map {height:100%;margin:0;padding:0;background:#000;}
 .leaflet-container {background:#000;}
@@ -167,21 +212,33 @@ html,body,#map {height:100%;margin:0;padding:0;background:#000;}
 var map = L.map('map',{zoomControl:true}).setView([${r.latitude},${r.longitude}], 14);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
 L.circleMarker([${r.latitude},${r.longitude}],{
-  radius:8,
-  color:'#2563eb',
-  weight:2,
-  fillColor:'#3b82f6',
-  fillOpacity:0.9
-}).addTo(map).bindPopup('You');
+  radius:8,color:'#2563eb',weight:2,fillColor:'#3b82f6',fillOpacity:0.9
+}).addTo(map).bindPopup('You (Current Location)');
 var places = ${encodedPlaces};
 places.forEach(function(p){
   if(!p.latitude || !p.longitude) return;
-  L.marker([p.latitude,p.longitude]).addTo(map).bindPopup(p.name);
+  var dist = p.distanceKm != null ? ' ('+p.distanceKm.toFixed(2)+' km)' : '';
+  L.marker([p.latitude,p.longitude]).addTo(map).bindPopup(p.name + dist);
 });
 </script>
 </body>
 </html>`;
   };
+
+  function haversine(lat1: number, lon1: number, lat2: number, lon2: number) {
+    const toRad = (d: number) => (d * Math.PI) / 180;
+    const R = 6371; // km
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(toRad(lat1)) *
+        Math.cos(toRad(lat2)) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  }
 
   // Web rendering (unchanged)
   if (Platform.OS === "web") {

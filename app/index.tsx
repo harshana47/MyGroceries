@@ -53,7 +53,7 @@ export default function Landing() {
 
   return (
     <ImageBackground
-      source={require("../assets/images/man.jpg")} // same background as login
+      source={require("../assets/images/man.jpg")}
       resizeMode="cover"
       style={{ flex: 1 }}
     >
@@ -105,7 +105,7 @@ export default function Landing() {
           </Text>
         </Animated.View>
 
-        {/* Main Card */}
+        {/* main Card */}
         <Animated.View
           style={{
             opacity: cardAnim,
@@ -160,7 +160,7 @@ export default function Landing() {
                 now!
               </Text>
 
-              {/* Feature bullets */}
+              {/*feature bullets */}
               <View style={{ marginBottom: 20 }}>
                 {[
                   {
@@ -183,7 +183,7 @@ export default function Landing() {
                 ))}
               </View>
 
-              {/* Login Button */}
+              {/* login Button */}
               <TouchableOpacity
                 onPress={() => router.push("../login")}
                 activeOpacity={0.85}
@@ -200,7 +200,7 @@ export default function Landing() {
                 </LinearGradient>
               </TouchableOpacity>
 
-              {/* Sign Up Button */}
+              {/* sign Up Button */}
               <TouchableOpacity
                 onPress={() => router.push("../signup")}
                 activeOpacity={0.85}
@@ -220,7 +220,7 @@ export default function Landing() {
           </LinearGradient>
         </Animated.View>
 
-        {/* Footer */}
+        {/* footer */}
         <Animated.View
           style={{
             opacity: footerAnim,
@@ -279,7 +279,6 @@ const styles = StyleSheet.create({
     padding: 28,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.55)",
-    // backdropFilter: "blur(18px)" as any, // removed, not supported in RN
   },
   featureRow: {
     flexDirection: "row",
