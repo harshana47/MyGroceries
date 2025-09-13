@@ -1,4 +1,4 @@
-package com.harshana_47.taskmanagerapp
+package com.harshana_47.my_groceries
 import expo.modules.splashscreen.SplashScreenManager
 
 import android.os.Build
