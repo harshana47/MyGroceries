@@ -62,7 +62,23 @@ export default function Signup() {
     setErrorMsg(null);
     setLoading(true);
     try {
-      await createUserWithEmailAndPassword(auth, email.trim(), password);
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        email.trim(),
+        password
+      );
+      // Save user info to Firestore
+      try {
+        const { db } = await import("../../firebase");
+        const { doc, setDoc } = await import("firebase/firestore");
+        await setDoc(doc(db, "users", userCredential.user.uid), {
+          email: userCredential.user.email,
+          createdAt: new Date().toISOString(),
+        });
+      } catch (firestoreError) {
+        console.error("Firestore user save error:", firestoreError);
+        Alert.alert("Warning", "Account created, but user data not saved.");
+      }
       Alert.alert("Success", "Account created successfully!");
       router.replace("../login");
     } catch (error: any) {
@@ -71,6 +87,7 @@ export default function Signup() {
           ? "Email already in use."
           : error?.message || "Signup failed."
       );
+      console.error("Signup error:", error);
     } finally {
       setLoading(false);
     }

@@ -1,4 +1,5 @@
 // app/dashboard/grocery/index.tsx
+import { useAuth } from "@/context/AuthContext";
 import { useLoader } from "@/context/LoaderContext";
 import {
   deleteGrocery,
@@ -32,30 +33,47 @@ const GroceryListScreen = () => {
   const [filter, setFilter] = useState<"all" | "active" | "completed">("all");
   const router = useRouter();
   const { showLoader, hideLoader } = useLoader();
+  const { user, loading: authLoading } = useAuth();
 
   const progressAnim = useRef(new Animated.Value(0)).current;
   const [barWidth, setBarWidth] = useState(0);
 
   useEffect(() => {
+    if (authLoading) return;
+    if (!user) {
+      setGroceries([]);
+      setCompletedIds([]);
+      return;
+    }
     showLoader();
-    const unsub = onSnapshot(
-      groceriesRef(),
-      (snap) => {
-        const items = snap.docs.map((d) => ({
-          id: d.id,
-          ...d.data(),
-          completed: false,
-        })) as Grocery[];
-        setGroceries(items);
-        hideLoader();
-      },
-      (err) => {
-        console.error("Error fetching groceries:", err);
-        hideLoader();
-      }
-    );
-    return () => unsub();
-  }, []);
+    let unsub: () => void = () => {};
+    try {
+      unsub = onSnapshot(
+        groceriesRef(),
+        (snap) => {
+          const items = snap.docs.map((d) => ({
+            id: d.id,
+            ...d.data(),
+            completed: false,
+          })) as Grocery[];
+          setGroceries(items);
+          hideLoader();
+        },
+        (err) => {
+          console.error("Error fetching groceries:", err);
+          hideLoader();
+        }
+      );
+    } catch (e) {
+      console.error("Grocery subscription error:", e);
+      hideLoader();
+    }
+    return () => {
+      try {
+        unsub();
+      } catch {}
+    };
+  }, [user, authLoading]);
 
   const progress = groceries.length
     ? (completedIds.length / groceries.length) * 100
@@ -134,6 +152,38 @@ const GroceryListScreen = () => {
       hideLoader();
     }
   };
+
+  if (authLoading) {
+    return <View style={{ flex: 1 }} />;
+  }
+
+  if (!user) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor: "#0b1220",
+        }}
+      >
+        <Text style={{ color: "#fff", marginBottom: 12, fontWeight: "700" }}>
+          Please login to see your groceries
+        </Text>
+        <TouchableOpacity
+          onPress={() => router.replace("/login")}
+          style={{
+            paddingHorizontal: 16,
+            paddingVertical: 10,
+            backgroundColor: "#6366f1",
+            borderRadius: 10,
+          }}
+        >
+          <Text style={{ color: "#fff", fontWeight: "700" }}>Go to Login</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <View style={{ flex: 1 }}>

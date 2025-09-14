@@ -79,7 +79,7 @@ const MapScreen = () => {
     })();
   }, []);
 
-  // Fetch places once region is ready
+  // places
   useEffect(() => {
     if (!region) return;
     fetchPlaces(region.latitude, region.longitude);
@@ -97,7 +97,6 @@ const MapScreen = () => {
       const collected: Place[] = [];
       for (let i = 0; i < RADIUS_STEPS.length; i++) {
         const radius = RADIUS_STEPS[i];
-        // Expanded shop / amenity filters
         const url = `https://overpass-api.de/api/interpreter?data=[out:json][timeout:25];
           (
             nwr["shop"~"^(supermarket|convenience|grocery|mini_market|department_store|hypermarket|greengrocer|mall|butcher|bakery|seafood)$"](around:${radius},${lat},${lng});
@@ -167,7 +166,6 @@ const MapScreen = () => {
             setShowFallback(false);
             return;
           }
-          // else continue to next larger radius
         }
         // If last radius and still insufficient
         if (i === RADIUS_STEPS.length - 1) {

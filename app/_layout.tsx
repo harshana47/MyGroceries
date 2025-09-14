@@ -1,3 +1,4 @@
+import ErrorBoundary from "@/components/ErrorBoundary";
 import { AuthProvider } from "@/context/AuthContext";
 import { LoaderProvider } from "@/context/LoaderContext";
 import { Slot } from "expo-router";
@@ -10,7 +11,9 @@ const RootLayout = () => {
   return (
     <LoaderProvider>
       <AuthProvider>
-        <Slot />
+        <ErrorBoundary>
+          <Slot />
+        </ErrorBoundary>
       </AuthProvider>
     </LoaderProvider>
   );

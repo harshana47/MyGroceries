@@ -11,4 +11,6 @@
 -keep class com.swmansion.reanimated.** { *; }
 -keep class com.facebook.react.turbomodule.** { *; }
 
+-keep class com.google.firebase.** { *; }
+-keep class com.google.android.gms.** { *; }
 # Add any project specific keep options here:

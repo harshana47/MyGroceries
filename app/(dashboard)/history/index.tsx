@@ -1,9 +1,11 @@
 // app/dashboard/history/index.tsx
+import { useAuth } from "@/context/AuthContext";
 import { historyRef } from "@/services/groceryService";
 import { Grocery } from "@/types/grocery";
 import { FontAwesome5, MaterialIcons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
 import { onSnapshot } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import {
@@ -28,8 +30,15 @@ if (
 const HistoryScreen = () => {
   const [history, setHistory] = useState<Grocery[]>([]);
   const [expandedDates, setExpandedDates] = useState<string[]>([]);
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
+    if (authLoading) return;
+    if (!user) {
+      setHistory([]);
+      return;
+    }
     const unsub = onSnapshot(historyRef(), (snap) => {
       const items = snap.docs.map((d) => ({
         id: d.id,
@@ -38,7 +47,7 @@ const HistoryScreen = () => {
       setHistory(items);
     });
     return () => unsub();
-  }, []);
+  }, [user, authLoading]);
 
   // group + sort by date (newest first)
   const groupedByDate: Record<string, Grocery[]> = {};
@@ -60,6 +69,34 @@ const HistoryScreen = () => {
       prev.includes(date) ? prev.filter((d) => d !== date) : [...prev, date]
     );
   };
+
+  if (authLoading) return <View style={{ flex: 1 }} />;
+  if (!user)
+    return (
+      <View
+        style={{
+          flex: 1,
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: "#0b1220",
+        }}
+      >
+        <Text style={{ color: "#fff", marginBottom: 10, fontWeight: "700" }}>
+          Please login to view history
+        </Text>
+        <TouchableOpacity
+          onPress={() => router.replace("/login")}
+          style={{
+            backgroundColor: "#6366f1",
+            paddingHorizontal: 16,
+            paddingVertical: 10,
+            borderRadius: 10,
+          }}
+        >
+          <Text style={{ color: "#fff", fontWeight: "700" }}>Go to Login</Text>
+        </TouchableOpacity>
+      </View>
+    );
 
   return (
     <ImageBackground

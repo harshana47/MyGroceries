@@ -58,7 +58,7 @@ export default function Login() {
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email.trim(), password);
-      router.replace("/home");
+      router.replace("/(dashboard)/home");
     } catch (error: any) {
       setErrorMsg(
         error?.code === "auth/invalid-credential"

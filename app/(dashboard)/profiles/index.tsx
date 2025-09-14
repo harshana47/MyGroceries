@@ -4,8 +4,6 @@ import { auth, db, storage } from "@/firebase";
 import { MaterialIcons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import * as ImagePicker from "expo-image-picker";
-// Note: We don't need expo-media-library just to pick an image.
-// Using ImagePicker avoids requesting unnecessary permissions (like AUDIO on Android).
 import { useRouter } from "expo-router";
 import { deleteUser, signOut, updateProfile } from "firebase/auth";
 import { deleteDoc, doc, getDoc, setDoc } from "firebase/firestore";
@@ -60,7 +58,6 @@ const ProfileScreen = () => {
 
   // Pick image
   const handlePickImage = async () => {
-    // Request only the media library permission needed for picking images.
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
       Alert.alert("Permission required", "We need access to your gallery.");
@@ -138,7 +135,6 @@ const ProfileScreen = () => {
       style={{ flex: 1 }}
       resizeMode="cover"
     >
-      {/* Dark / color overlay */}
       <View
         style={{
           ...StyleSheet.absoluteFillObject,
@@ -170,7 +166,7 @@ const ProfileScreen = () => {
             Profile
           </Text>
 
-          {/* Glass Card */}
+          {/* glass Card */}
           <BlurView
             intensity={70}
             tint="dark"
@@ -189,7 +185,7 @@ const ProfileScreen = () => {
               shadowRadius: 18,
             }}
           >
-            {/* Avatar (floating) */}
+            {/* avatar (floating) */}
             <View
               style={{
                 position: "absolute",
@@ -253,7 +249,7 @@ const ProfileScreen = () => {
               )}
             </View>
 
-            {/* Identity */}
+            {/* identity */}
             <Text
               style={{
                 marginTop: 60,
@@ -279,7 +275,7 @@ const ProfileScreen = () => {
               </Text>
             ) : null}
 
-            {/* Quick Actions Row */}
+            {/* quick Actions Row */}
             <View
               style={{
                 flexDirection: "row",
