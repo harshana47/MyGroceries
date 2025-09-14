@@ -55,8 +55,7 @@
     "react-router": "5.3",
     "react-router-dom": "5.3",
     "react-native-svg": "15.12.1",
-    "@expo/metro-runtime": "~6.1.2",
-    "react-native-worklets": "0.5.1"
+    "@expo/metro-runtime": "~6.1.2"
   },
   "devDependencies": {
     "@babel/core": "^7.28.3",
