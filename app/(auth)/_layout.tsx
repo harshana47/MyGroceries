@@ -1,6 +1,5 @@
-import { View, Text } from "react-native"
-import React from "react"
-import { Stack } from "expo-router"
+import { Stack } from "expo-router";
+import React from "react";
 
 const AuthLayout = () => {
   return (
@@ -10,7 +9,7 @@ const AuthLayout = () => {
       <Stack.Screen name="login" options={{ title: "Login" }} />
       <Stack.Screen name="register" options={{ title: "Register" }} />
     </Stack>
-  )
-}
+  );
+};
 
-export default AuthLayout
+export default AuthLayout;

@@ -414,11 +414,12 @@ const styles = StyleSheet.create({
   debugBox: {
     position: "absolute",
     top: 50,
-    left: 16,
-    right: 16,
+    left: 56, // was 16
+    right: 56, // was 16
     backgroundColor: "rgba(17,24,39,0.9)",
     padding: 14,
     borderRadius: 16,
+    alignItems: "center", // center children
   },
   debugTitle: {
     color: "#fff",
@@ -426,12 +427,14 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     fontSize: 14,
     letterSpacing: 0.5,
+    textAlign: "center", // center text
   },
   debugLine: {
     color: "rgba(255,255,255,0.75)",
     fontSize: 11,
     marginBottom: 2,
     lineHeight: 16,
+    textAlign: "center", // center text
   },
   refreshButton: {
     position: "absolute",

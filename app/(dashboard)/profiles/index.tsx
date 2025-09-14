@@ -4,7 +4,8 @@ import { auth, db, storage } from "@/firebase";
 import { MaterialIcons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import * as ImagePicker from "expo-image-picker";
-import * as MediaLibrary from "expo-media-library";
+// Note: We don't need expo-media-library just to pick an image.
+// Using ImagePicker avoids requesting unnecessary permissions (like AUDIO on Android).
 import { useRouter } from "expo-router";
 import { deleteUser, signOut, updateProfile } from "firebase/auth";
 import { deleteDoc, doc, getDoc, setDoc } from "firebase/firestore";
@@ -59,7 +60,8 @@ const ProfileScreen = () => {
 
   // Pick image
   const handlePickImage = async () => {
-    const { status } = await MediaLibrary.requestPermissionsAsync();
+    // Request only the media library permission needed for picking images.
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
       Alert.alert("Permission required", "We need access to your gallery.");
       return;
@@ -118,7 +120,7 @@ const ProfileScreen = () => {
             showLoader();
             await deleteDoc(doc(db, "users", user.uid));
             await deleteUser(user);
-            router.replace("/auth/login");
+            router.replace("/(auth)/login");
           } catch (err) {
             console.error("Delete failed:", err);
             Alert.alert("Error", "Failed to delete account.");
@@ -295,7 +297,7 @@ const ProfileScreen = () => {
               </TouchableOpacity>
 
               <TouchableOpacity
-                onPress={() => router.push("(auth)/forgotPassword")}
+                onPress={() => router.push("/(auth)/forgotPassword")}
                 style={quickActionStyle}
               >
                 <MaterialIcons name="lock-reset" size={26} color="#0ea5e9" />

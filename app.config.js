@@ -2,10 +2,11 @@ import 'dotenv/config';
 
 export default {
   expo: {
-    name: "my-groceries",
+    name: "My Groceries",
     slug: "my-groceries",
     owner: "harshana_47",
     version: "1.0.0",
+    icon: "./assets/images/grocery.png",
     scheme: "goceryapp",
     userInterfaceStyle: "automatic",
     newArchEnabled: true,
@@ -16,23 +17,24 @@ export default {
       package: "com.harshana_47.my_groceries",
       edgeToEdgeEnabled: true,
       adaptiveIcon: {
-        foregroundImage: "./assets/images/adaptive-icon.png",
+        foregroundImage: "./assets/images/grocery.png",
         backgroundColor: "#ffffff",
       },
     },
     web: {
       bundler: "metro",
       output: "static",
-      favicon: "./assets/images/favicon.png",
+      favicon: "./assets/images/grocery.png",
     },
     plugins: [
       'expo-router',
       'expo-font',
       'expo-web-browser',
+      'expo-image-picker',
       [
         'expo-splash-screen',
         {
-          image: './assets/images/splash-icon.png',
+          image: './assets/images/grocery.png',
           imageWidth: 200,
           resizeMode: 'contain',
           backgroundColor: '#ffffff',

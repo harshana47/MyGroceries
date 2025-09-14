@@ -31,8 +31,8 @@ export default function Signup() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // Animations
-  const headerAnim = useRef(new Animated.Value(0)).current;
-  const formAnim = useRef(new Animated.Value(0)).current;
+  const headerAnim = useRef(new Animated.Value(1)).current;
+  const formAnim = useRef(new Animated.Value(1)).current;
   useEffect(() => {
     Animated.stagger(160, [
       Animated.timing(headerAnim, {
@@ -84,17 +84,20 @@ export default function Signup() {
     >
       {/* Dark overlay */}
       <View
+        pointerEvents="none"
         style={{
           ...StyleSheet.absoluteFillObject,
+          position: "absolute",
           backgroundColor: "rgba(0,0,0,0.55)",
-          zIndex: 1,
+          zIndex: 0,
+          elevation: 0,
         }}
       />
 
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         className="flex-1 px-6 py-10 justify-between"
-        style={{ zIndex: 2 }}
+        style={{ zIndex: 1, elevation: 1, position: "relative" }}
       >
         {/* Header */}
         <Animated.View
@@ -237,7 +240,7 @@ export default function Signup() {
 
         {/* Footer */}
         <View className="items-center mb-8">
-          <TouchableOpacity onPress={() => router.push("../(auth)/login")}>
+          <TouchableOpacity onPress={() => router.push("/login")}>
             <Text style={styles.footerText}>
               Already have an account?{" "}
               <Text style={styles.footerLink}>Login</Text>

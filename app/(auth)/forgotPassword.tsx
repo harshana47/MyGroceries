@@ -276,7 +276,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.4,
   },
   successText: {
-    color: "#16a34a",
+    color: "#1e3a8a",
     fontWeight: "600",
     fontSize: 13,
     letterSpacing: 0.4,

@@ -35,7 +35,7 @@ const GroceryFormScreen = () => {
   const router = useRouter();
   const { showLoader, hideLoader } = useLoader();
   const { user } = useAuth();
-  const formAnim = React.useRef(new Animated.Value(0)).current;
+  const formAnim = React.useRef(new Animated.Value(1)).current;
   const btnScale = React.useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
@@ -126,7 +126,6 @@ const GroceryFormScreen = () => {
         <Animated.View
           style={{
             width: "100%",
-            opacity: formAnim,
             transform: [
               {
                 translateY: formAnim.interpolate({

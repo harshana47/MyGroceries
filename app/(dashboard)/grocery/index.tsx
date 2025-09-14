@@ -403,7 +403,7 @@ const GroceryListScreen = () => {
           </View>
 
           {/* Floating Add Button */}
-          <View className="absolute bottom-24 right-6 z-20">
+          <View className="absolute bottom-32 right-6 z-20">
             <Pressable
               className="rounded-full shadow-lg"
               onPress={() => router.push("/(dashboard)/grocery/new")}

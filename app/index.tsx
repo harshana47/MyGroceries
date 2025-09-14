@@ -24,9 +24,9 @@ import {
 
 export default function Landing() {
   // Animations
-  const headerAnim = React.useRef(new Animated.Value(0)).current;
-  const cardAnim = React.useRef(new Animated.Value(0)).current;
-  const footerAnim = React.useRef(new Animated.Value(0)).current;
+  const headerAnim = React.useRef(new Animated.Value(1)).current;
+  const cardAnim = React.useRef(new Animated.Value(1)).current;
+  const footerAnim = React.useRef(new Animated.Value(1)).current;
 
   React.useEffect(() => {
     Animated.stagger(140, [

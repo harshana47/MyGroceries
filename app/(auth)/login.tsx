@@ -29,8 +29,8 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const headerAnim = React.useRef(new Animated.Value(0)).current;
-  const formAnim = React.useRef(new Animated.Value(0)).current;
+  const headerAnim = React.useRef(new Animated.Value(1)).current;
+  const formAnim = React.useRef(new Animated.Value(1)).current;
 
   React.useEffect(() => {
     Animated.stagger(160, [
@@ -71,22 +71,6 @@ export default function Login() {
   }
 
   return (
-    // <ImageBackground
-    //   source={require("../../assets/images/man3.jpg")}
-    //   resizeMode="cover"
-    //   style={{ flex: 1 }}
-    // >
-    //   <KeyboardAvoidingView
-    //     behavior={Platform.OS === "ios" ? "padding" : undefined}
-    //     className="flex-1 px-6 py-10 justify-between"
-    //   >
-    //     {/* Header */}
-    //     <View className="items-center mt-12">
-    //       <Text className="text-white text-5xl mt-4 font-extrabold">Login</Text>
-    //       <Text className="text-white mt-4 text-base">
-    //         Welcome back 👋 Sign in to continue
-    //       </Text>
-    //     </View>
     <ImageBackground
       source={require("../../assets/images/man.jpg")}
       resizeMode="cover"

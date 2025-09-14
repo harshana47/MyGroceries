@@ -58,9 +58,6 @@
     "@expo/metro-runtime": "~6.1.2"
   },
   "devDependencies": {
-    "@babel/core": "^7.28.3",
-    "@babel/preset-env": "^7.28.3",
-    "@babel/preset-typescript": "^7.27.1",
     "@types/leaflet": "^1.9.20",
   "@types/react": "~19.1.10",
     "@types/react-router-dom": "5.3",

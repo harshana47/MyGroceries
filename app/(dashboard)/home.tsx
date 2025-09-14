@@ -267,7 +267,7 @@ export default function Home() {
               gradientColors={["#f1f5f9", "#e2e8f0", "#cbd5e1"]}
               icon="map"
               label="Map"
-              onPress={() => router.push("/map")}
+              onPress={() => router.push("/maps")}
               iconColor="#000"
               textColor="#111"
             />
@@ -285,10 +285,10 @@ export default function Home() {
             />
             <AnimatedCard
               color="black"
-              gradientColors={["#0f172a", "#1e293b", "#334155"]}
+              gradientColors={["#4c1d95", "#1e293b", "#334155"]}
               icon="person"
               label="Profile"
-              onPress={() => router.push("/profile")}
+              onPress={() => router.push("/profiles")}
             />
           </View>
 
