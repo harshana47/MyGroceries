@@ -1,4 +1,3 @@
-// app/dashboard/grocery/index.tsx
 import { useAuth } from "@/context/AuthContext";
 import { useLoader } from "@/context/LoaderContext";
 import {

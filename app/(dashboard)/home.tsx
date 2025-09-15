@@ -155,7 +155,6 @@ export default function Home() {
       style={{ flex: 1 }}
       resizeMode="cover"
     >
-      {/* status Bar with black background */}
       <StatusBar backgroundColor="black" barStyle="light-content" />
 
       {/* Overlay */}

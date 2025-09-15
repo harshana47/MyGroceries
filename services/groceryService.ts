@@ -9,14 +9,12 @@ import {
   updateDoc,
 } from "firebase/firestore";
 
-// 🔑 Helper to get current user id
 const getUserId = () => {
   const user = auth.currentUser;
   if (!user) throw new Error("User not logged in");
   return user.uid;
 };
 
-// References
 export const groceriesRef = () =>
   collection(db, "users", getUserId(), "groceries");
 
@@ -26,9 +24,7 @@ export const groceryDoc = (id: string) =>
 export const historyRef = () =>
   collection(db, "users", getUserId(), "history");
 
-// ---------------- CRUD ----------------
 
-// Create
 export const createGrocery = async (grocery: Partial<Grocery>) => {
   await addDoc(groceriesRef(), {
     ...grocery,
@@ -38,9 +34,8 @@ export const createGrocery = async (grocery: Partial<Grocery>) => {
   });
 };
 
-// Read single
 export const getGroceryById = async (id: string): Promise<Grocery | null> => {
-  const ref = groceryDoc(id); // ✅ user-specific
+  const ref = groceryDoc(id);
   const snap = await getDoc(ref);
   if (!snap.exists()) return null;
 
@@ -50,18 +45,16 @@ export const getGroceryById = async (id: string): Promise<Grocery | null> => {
   };
 };
 
-// Update
 export const updateGrocery = async (id: string, grocery: Partial<Grocery>) => {
-  const ref = groceryDoc(id); // ✅ user-specific
+  const ref = groceryDoc(id); 
   await updateDoc(ref, {
     ...grocery,
     updatedAt: Date.now(),
   });
 };
 
-// Delete
 export const deleteGrocery = async (id: string) => {
-  const ref = groceryDoc(id); // ✅ user-specific
+  const ref = groceryDoc(id); 
   console.log("Deleting grocery with id:", id);
   try {
     await deleteDoc(ref);
@@ -72,23 +65,21 @@ export const deleteGrocery = async (id: string) => {
   }
 };
 
-// Toggle complete
 export const toggleGroceryComplete = async (
   id: string,
   completed: boolean
 ) => {
-  const ref = groceryDoc(id); // ✅ user-specific
+  const ref = groceryDoc(id); 
   await updateDoc(ref, { completed });
 };
 
-// Move items to history
 export const moveToHistory = async (items: Grocery[]) => {
   for (const item of items) {
     const historyDocData = {
       ...item,
       movedAt: Date.now(),
     };
-    await addDoc(historyRef(), historyDocData); // ✅ save under user’s history
-    if (item.id) await deleteDoc(groceryDoc(item.id)); // ✅ remove from user’s groceries
+    await addDoc(historyRef(), historyDocData);
+    if (item.id) await deleteDoc(groceryDoc(item.id));
   }
 };

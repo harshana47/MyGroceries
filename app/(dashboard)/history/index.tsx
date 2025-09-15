@@ -1,4 +1,3 @@
-// app/dashboard/history/index.tsx
 import { useAuth } from "@/context/AuthContext";
 import { historyRef } from "@/services/groceryService";
 import { Grocery } from "@/types/grocery";

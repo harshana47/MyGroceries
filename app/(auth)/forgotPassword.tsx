@@ -22,7 +22,7 @@ const ForgotPassword = () => {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
-  const fadeAnim = React.useRef(new Animated.Value(0)).current;
+  const fadeAnim = React.useRef(new Animated.Value(1)).current;
 
   React.useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -67,9 +67,7 @@ const ForgotPassword = () => {
       resizeMode="cover"
       style={{ flex: 1 }}
     >
-      {/* Blur overlay on top of image */}
       <BlurView intensity={60} tint="dark" style={StyleSheet.absoluteFill} />
-      {/* Dark overlay */}
       <View style={styles.overlay} />
       <Animated.View
         style={{

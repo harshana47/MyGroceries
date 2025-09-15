@@ -1,4 +1,3 @@
-// app/dashboard/grocery/[id].tsx
 import { useAuth } from "@/context/AuthContext";
 import { useLoader } from "@/context/LoaderContext";
 import {
@@ -113,7 +112,6 @@ const GroceryFormScreen = () => {
       style={{ flex: 1 }}
       resizeMode="cover"
     >
-      {/* Overlay */}
       <View
         style={{
           ...StyleSheet.absoluteFillObject,
@@ -122,7 +120,6 @@ const GroceryFormScreen = () => {
       />
 
       <View className="flex-1 justify-center items-center px-6">
-        {/* Rebuilt Card */}
         <Animated.View
           style={{
             width: "100%",
