@@ -119,24 +119,55 @@ export default function Scan() {
     const out: Cand[] = [];
 
     // 1) Logos (brands)
-    const logos = (resp.logoAnnotations as Array<{ description: string; score?: number }>) || [];
+    const logos =
+      (resp.logoAnnotations as Array<{
+        description: string;
+        score?: number;
+      }>) || [];
     logos.forEach((l) => {
-      if (l?.description) out.push({ text: l.description, score: l.score ?? 0.85, source: "logo" });
+      if (l?.description)
+        out.push({
+          text: l.description,
+          score: l.score ?? 0.85,
+          source: "logo",
+        });
     });
 
     // 2) Web best-guess and entities
     const web = resp.webDetection as any;
     const bestGuess = web?.bestGuessLabels?.[0]?.label as string | undefined;
-    if (bestGuess) out.push({ text: bestGuess, score: 0.8, source: "web-guess" });
-    const webEntities = (web?.webEntities as Array<{ description?: string; score?: number }>) || [];
+    if (bestGuess)
+      out.push({ text: bestGuess, score: 0.8, source: "web-guess" });
+    const webEntities =
+      (web?.webEntities as Array<{ description?: string; score?: number }>) ||
+      [];
     webEntities.forEach((w) => {
-      if (w.description && (w.score ?? 0) >= 0.5) out.push({ text: w.description, score: w.score ?? 0.6, source: "web-entity" });
+      if (w.description && (w.score ?? 0) >= 0.5)
+        out.push({
+          text: w.description,
+          score: w.score ?? 0.6,
+          source: "web-entity",
+        });
     });
 
     // 3) OCR lines: prefer TitleCase/ALLCAPS, skip generic words
     const fullText: string | undefined = resp.fullTextAnnotation?.text;
     if (fullText) {
-      const stop = new Set(["tea", "green", "black", "carton", "bottle", "box", "drink", "organic", "product", "net", "weight", "ml", "g"]);
+      const stop = new Set([
+        "tea",
+        "green",
+        "black",
+        "carton",
+        "bottle",
+        "box",
+        "drink",
+        "organic",
+        "product",
+        "net",
+        "weight",
+        "ml",
+        "g",
+      ]);
       const lines = fullText
         .split(/\r?\n/)
         .map((s) => s.trim())
@@ -146,7 +177,9 @@ export default function Scan() {
         if (!pure) return false;
         const tokens = pure.split(/\s+/);
         // Kill lines dominated by stopwords
-        const stopCount = tokens.filter((t) => stop.has(t.toLowerCase())).length;
+        const stopCount = tokens.filter((t) =>
+          stop.has(t.toLowerCase())
+        ).length;
         if (stopCount / tokens.length > 0.4) return false;
         if (tokens.length === 1) {
           const t = tokens[0].toLowerCase();
@@ -154,27 +187,51 @@ export default function Scan() {
           return /^(?:[A-Z][a-z]+|[A-Z]{3,})$/.test(pure); // TitleCase or ALLCAPS
         }
         // 2+ words: majority capitalized or TitleCase
-        const capRatio = tokens.filter((t) => /^[A-Z]/.test(t)).length / tokens.length;
+        const capRatio =
+          tokens.filter((t) => /^[A-Z]/.test(t)).length / tokens.length;
         return capRatio >= 0.6;
       });
-      brandy.slice(0, 6).forEach((s, i) => out.push({ text: s, score: 0.7 - i * 0.05, source: "ocr" }));
+      brandy
+        .slice(0, 6)
+        .forEach((s, i) =>
+          out.push({ text: s, score: 0.7 - i * 0.05, source: "ocr" })
+        );
     }
 
     // 4) Objects (low priority, may be generic like "carton")
-    const objects = (resp.localizedObjectAnnotations as Array<{ name: string; score?: number }>) || [];
+    const objects =
+      (resp.localizedObjectAnnotations as Array<{
+        name: string;
+        score?: number;
+      }>) || [];
     objects.forEach((o) => {
-      if (o.name) out.push({ text: o.name, score: (o.score ?? 0.5) * 0.6, source: "object" });
+      if (o.name)
+        out.push({
+          text: o.name,
+          score: (o.score ?? 0.5) * 0.6,
+          source: "object",
+        });
     });
 
     // 5) Labels fallback
-    const labels = (resp.labelAnnotations as Array<{ description: string; score?: number }>) || [];
+    const labels =
+      (resp.labelAnnotations as Array<{
+        description: string;
+        score?: number;
+      }>) || [];
     labels.forEach((l) => {
-      if (l.description) out.push({ text: l.description, score: (l.score ?? 0.5) * 0.5, source: "label" });
+      if (l.description)
+        out.push({
+          text: l.description,
+          score: (l.score ?? 0.5) * 0.5,
+          source: "label",
+        });
     });
 
     // Normalize & rank, prefer higher score and non-generic tokens
     const normalized = new Map<string, Cand>();
-    const normalize = (s: string) => s.trim().replace(/\s+/g, " ").toLowerCase();
+    const normalize = (s: string) =>
+      s.trim().replace(/\s+/g, " ").toLowerCase();
     out.forEach((c) => {
       const key = normalize(c.text);
       if (!key) return;
@@ -275,7 +332,15 @@ export default function Scan() {
           <>
             <Text style={styles.text}>Detected: {detectedLabel}</Text>
             {candidates.length > 1 ? (
-              <View style={{ marginTop: 8, flexDirection: "row", flexWrap: "wrap", gap: 8, justifyContent: "center" }}>
+              <View
+                style={{
+                  marginTop: 8,
+                  flexDirection: "row",
+                  flexWrap: "wrap",
+                  gap: 8,
+                  justifyContent: "center",
+                }}
+              >
                 {candidates.map((c) => (
                   <TouchableOpacity
                     key={c}
@@ -284,7 +349,8 @@ export default function Scan() {
                       paddingVertical: 6,
                       paddingHorizontal: 10,
                       borderRadius: 16,
-                      backgroundColor: c === detectedLabel ? "#10b981" : "#1f2937",
+                      backgroundColor:
+                        c === detectedLabel ? "#10b981" : "#1f2937",
                       borderWidth: 1,
                       borderColor: "#374151",
                     }}
