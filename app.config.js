@@ -13,6 +13,9 @@ export default {
   },
   extra: {
     mockApi: process.env.EXPO_BASE_API_URL,
+    // Expose Google Cloud Vision API key for runtime fallback access
+    // Prefer using EXPO_PUBLIC_GCV_API_KEY; it's safe to be embedded in the bundle
+    gcvApiKey: process.env.EXPO_PUBLIC_GCV_API_KEY,
     eas: {
       projectId: "bcf3c0cc-9a1c-4b37-ad57-333a0def12ca",
     },
