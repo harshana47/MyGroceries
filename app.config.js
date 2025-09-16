@@ -17,7 +17,7 @@ export default {
     // Prefer using EXPO_PUBLIC_GCV_API_KEY; it's safe to be embedded in the bundle
     gcvApiKey: process.env.EXPO_PUBLIC_GCV_API_KEY,
     eas: {
-      projectId: "bcf3c0cc-9a1c-4b37-ad57-333a0def12ca",
+      projectId: "e6b3adab-2ebc-4132-99e8-c95e63e90458",
     },
   },
 };

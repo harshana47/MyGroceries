@@ -294,7 +294,7 @@ export default function Home() {
           <View style={{ flexDirection: "row" }}>
             <AnimatedCard
               color="#0ea5e9"
-              gradientColors={["#0369a1", "#1e293b", "#0f172a"]}
+              gradientColors={["#4c1d95", "#1e293b", "#334155"]}
               icon="support"
               label="Support"
               onPress={() => router.push("/support")}

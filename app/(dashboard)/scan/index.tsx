@@ -1,6 +1,9 @@
 // app/Scan.tsx
+import { groceriesRef } from "@/services/groceryService";
 import { Camera, CameraView } from "expo-camera";
 import Constants from "expo-constants";
+import { manipulateAsync, SaveFormat } from "expo-image-manipulator";
+import { getDocs } from "firebase/firestore";
 import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -8,6 +11,7 @@ import {
   Button,
   Linking,
   StyleSheet,
+  Switch,
   Text,
   TouchableOpacity,
   View,
@@ -19,6 +23,9 @@ export default function Scan() {
   const [processing, setProcessing] = useState(false);
   const [detectedLabel, setDetectedLabel] = useState<string | null>(null);
   const [candidates, setCandidates] = useState<string[]>([]);
+  const [grocerySet, setGrocerySet] = useState<Set<string>>(new Set());
+  const [multiMode, setMultiMode] = useState(false);
+  const [multiItems, setMultiItems] = useState<string[]>([]);
 
   // Prefer EXPO_PUBLIC_ env (auto-injected by Expo). Fallback to app.config extra.
   const ENV_GCV = process.env.EXPO_PUBLIC_GCV_API_KEY;
@@ -46,12 +53,31 @@ export default function Scan() {
     })();
   }, []);
 
+  // Load user's grocery list names for highlighting
+  useEffect(() => {
+    const loadGroceries = async () => {
+      try {
+        const snap = await getDocs(groceriesRef());
+        const set = new Set<string>();
+        snap.forEach((d) => {
+          const data = d.data() as any;
+          if (data?.name) set.add(normalizeLabel(data.name));
+        });
+        setGrocerySet(set);
+      } catch (e) {
+        console.log("[Scan] Could not load groceries for highlight", e);
+      }
+    };
+    loadGroceries();
+  }, []);
+
   const captureAndDetect = async () => {
     if (processing) return;
     try {
       setProcessing(true);
       setDetectedLabel(null);
       setCandidates([]);
+      setMultiItems([]);
       const photo = await cameraRef.current?.takePictureAsync({
         base64: true,
         quality: 0.8, // better quality improves detection accuracy
@@ -68,6 +94,100 @@ export default function Scan() {
         );
         return;
       }
+      // If multi-item mode: run object localization first
+      if (multiMode) {
+        const locateBody = {
+          requests: [
+            {
+              image: { content: photo.base64 },
+              features: [{ type: "OBJECT_LOCALIZATION", maxResults: 15 }],
+            },
+          ],
+        } as const;
+        const locateRes = await fetch(
+          `https://vision.googleapis.com/v1/images:annotate?key=${GOOGLE_VISION_API_KEY}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(locateBody),
+          }
+        );
+        const locateJson = await locateRes.json();
+        const locResp = locateJson?.responses?.[0];
+        const objects: Array<{
+          name: string;
+          score?: number;
+          boundingPoly?: any;
+        }> = (locResp?.localizedObjectAnnotations as any[]) || [];
+
+        // Sort by score and limit
+        const sorted = objects
+          .filter((o) => Array.isArray(o?.boundingPoly?.normalizedVertices))
+          .sort((a, b) => (b.score || 0) - (a.score || 0))
+          .slice(0, 6);
+
+        const crops: { base64: string; hint?: string }[] = [];
+        for (const obj of sorted) {
+          const base64 = await cropFromNormalizedBox(
+            photo,
+            obj.boundingPoly.normalizedVertices
+          );
+          if (base64)
+            crops.push({
+              base64,
+              hint: obj?.name ? String(obj.name) : undefined,
+            });
+        }
+
+        const detailedFeatures = [
+          { type: "LOGO_DETECTION", maxResults: 8 },
+          { type: "WEB_DETECTION", maxResults: 20 },
+          { type: "TEXT_DETECTION", maxResults: 8 },
+          { type: "LABEL_DETECTION", maxResults: 20, model: "builtin/latest" },
+        ];
+
+        const items: string[] = [];
+        for (const c of crops) {
+          const body = {
+            requests: [
+              { image: { content: c.base64 }, features: detailedFeatures },
+            ],
+          } as const;
+          const res = await fetch(
+            `https://vision.googleapis.com/v1/images:annotate?key=${GOOGLE_VISION_API_KEY}`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(body),
+            }
+          );
+          const j = await res.json();
+          const r = j?.responses?.[0];
+          const cand = pickSpecificItem(r, c.hint) || extractCandidates(r)[0];
+          if (cand) items.push(cand);
+        }
+
+        // Dedupe and set
+        const seen = new Set<string>();
+        const unique = items.filter((x) => {
+          const k = normalizeLabel(x);
+          if (seen.has(k)) return false;
+          seen.add(k);
+          return true;
+        });
+        if (unique.length) {
+          setMultiItems(unique);
+          // Also set a headline detectedLabel to the first
+          setDetectedLabel(unique[0]);
+        } else {
+          Alert.alert(
+            "Not found",
+            "Could not recognize separate items. Try a closer photo."
+          );
+        }
+        return;
+      }
+
       const body = {
         requests: [
           {
@@ -111,6 +231,223 @@ export default function Scan() {
       setProcessing(false);
     }
   };
+
+  async function cropFromNormalizedBox(
+    photo: { uri?: string; width?: number; height?: number },
+    normVerts: Array<{ x?: number; y?: number }>
+  ): Promise<string | null> {
+    try {
+      if (!photo?.uri) return null;
+      // Compute bounding box in pixels
+      // Normalize missing width/height by assuming 1000x1000 if absent
+      const W = photo.width || 1000;
+      const H = photo.height || 1000;
+      const xs = normVerts.map((v) => Math.max(0, Math.min(1, v.x ?? 0)));
+      const ys = normVerts.map((v) => Math.max(0, Math.min(1, v.y ?? 0)));
+      const xMin = Math.min(...xs);
+      const xMax = Math.max(...xs);
+      const yMin = Math.min(...ys);
+      const yMax = Math.max(...ys);
+      let originX = Math.round(xMin * W);
+      let originY = Math.round(yMin * H);
+      let width = Math.round((xMax - xMin) * W);
+      let height = Math.round((yMax - yMin) * H);
+      // Add small padding
+      const pad = 6;
+      originX = Math.max(0, originX - pad);
+      originY = Math.max(0, originY - pad);
+      width = Math.min(W - originX, width + pad * 2);
+      height = Math.min(H - originY, height + pad * 2);
+      // Skip tiny boxes
+      if (width < 40 || height < 40) return null;
+      // Prepare actions: crop then optional resize to ensure sufficient pixels
+      const actions: any[] = [{ crop: { originX, originY, width, height } }];
+      const minDim = 512;
+      if (Math.min(width, height) < minDim) {
+        const scale = minDim / Math.min(width, height);
+        const targetW = Math.round(width * scale);
+        const targetH = Math.round(height * scale);
+        actions.push({ resize: { width: targetW, height: targetH } });
+      }
+      const result = await manipulateAsync(photo.uri, actions, {
+        compress: 0.9,
+        format: SaveFormat.JPEG,
+        base64: true,
+      });
+      return result.base64 || null;
+    } catch (e) {
+      console.log("[Scan] Crop failed", e);
+      return null;
+    }
+  }
+
+  function pickSpecificItem(resp: any, hint?: string): string | null {
+    if (!resp) return null;
+    const FRUITS = new Set([
+      "banana",
+      "apple",
+      "grape",
+      "grapes",
+      "orange",
+      "mango",
+      "pineapple",
+      "strawberry",
+      "blueberry",
+      "raspberry",
+      "blackberry",
+      "pear",
+      "peach",
+      "plum",
+      "cherry",
+      "watermelon",
+      "cantaloupe",
+      "melon",
+      "papaya",
+      "kiwi",
+      "lemon",
+      "lime",
+      "pomegranate",
+      "apricot",
+      "nectarine",
+      "dragon fruit",
+      "passion fruit",
+      "grapefruit",
+    ]);
+    const VEGETABLES = new Set([
+      "tomato",
+      "potato",
+      "onion",
+      "garlic",
+      "carrot",
+      "cucumber",
+      "bell pepper",
+      "capsicum",
+      "pepper",
+      "eggplant",
+      "aubergine",
+      "zucchini",
+      "courgette",
+      "broccoli",
+      "cauliflower",
+      "cabbage",
+      "lettuce",
+      "spinach",
+      "kale",
+      "okra",
+      "beans",
+      "green beans",
+      "peas",
+      "beetroot",
+      "radish",
+      "ginger",
+      "chili",
+      "chilli",
+    ]);
+    const GENERIC = new Set([
+      "fruit",
+      "fruits",
+      "vegetable",
+      "vegetables",
+      "produce",
+      "food",
+      "groceries",
+    ]);
+
+    const allDict = new Set<string>([...FRUITS, ...VEGETABLES]);
+    const canonical = (d: string) => {
+      let s = d.toLowerCase();
+      if (s.endsWith("es") && allDict.has(s.slice(0, -2))) s = s.slice(0, -2);
+      else if (s.endsWith("s") && allDict.has(s.slice(0, -1)))
+        s = s.slice(0, -1);
+      if (s === "capsicum") s = "bell pepper";
+      if (s === "aubergine") s = "eggplant";
+      if (s === "courgette") s = "zucchini";
+      if (s === "chilli") s = "chili";
+      return s;
+    };
+
+    const acceptSpecific = (d: string) => {
+      const c = canonical(d);
+      if (GENERIC.has(c)) return null;
+      if (FRUITS.has(c) || VEGETABLES.has(c)) return toTitle(c);
+      for (const w of allDict) {
+        if (c.includes(w)) return toTitle(w);
+      }
+      return null;
+    };
+
+    // 0) Use object name hint if Vision localized an object like "banana"
+    if (hint) {
+      const a = acceptSpecific(hint);
+      if (a) return a;
+    }
+
+    // Prefer web entities matching fruit names
+    const web = resp.webDetection as any;
+    const webEntities = ((web?.webEntities as any[]) || [])
+      .filter((w) => w?.description)
+      .map((w) => ({
+        desc: String(w.description).toLowerCase(),
+        score: Number(w.score || 0),
+      }));
+    const fruitEntity = webEntities
+      .filter((w) => {
+        const d = w.desc;
+        if (GENERIC.has(d)) return false;
+        // direct fruit match or contains fruit token
+        return [...FRUITS].some(
+          (f) => d === f || d.includes(` ${f}`) || d.startsWith(`${f} `)
+        );
+      })
+      .sort((a, b) => b.score - a.score)[0];
+    if (fruitEntity) {
+      const a = acceptSpecific(fruitEntity.desc);
+      if (a) return a;
+    }
+
+    // Labels fallback for fruit words
+    const labels = ((resp.labelAnnotations as any[]) || []).map((l) => ({
+      desc: String(l.description || "").toLowerCase(),
+      score: Number(l.score || 0),
+    }));
+    const fruitLabel = labels
+      .filter(
+        (l) =>
+          !GENERIC.has(l.desc) &&
+          [...allDict].some((f) => l.desc === f || l.desc.includes(f))
+      )
+      .sort((a, b) => b.score - a.score)[0];
+    if (fruitLabel) {
+      const a = acceptSpecific(fruitLabel.desc);
+      if (a) return a;
+    }
+
+    // OCR lines: look for fruit words
+    const fullText: string | undefined = resp.fullTextAnnotation?.text;
+    if (fullText) {
+      const match = fullText
+        .toLowerCase()
+        .split(/\r?\n/)
+        .map((s) => s.trim())
+        .find(
+          (line) =>
+            [...allDict].some((f) => line.includes(f)) &&
+            ![...GENERIC].some((g) => line === g)
+        );
+      if (match) {
+        const f = [...allDict].find((w) => match.includes(w));
+        if (f) return toTitle(f);
+      }
+    }
+    return null;
+  }
+
+  function toTitle(s: string): string {
+    return s
+      .split(" ")
+      .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : w))
+      .join(" ");
+  }
 
   function extractCandidates(resp: any): string[] {
     if (!resp) return [];
@@ -244,6 +581,14 @@ export default function Scan() {
       .slice(0, 5);
   }
 
+  function normalizeLabel(s: string): string {
+    return s
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9\s\-]/g, "")
+      .replace(/\s+/g, " ");
+  }
+
   function pickBestLabel(resp: any): string | null {
     if (!resp) return null;
 
@@ -331,7 +676,7 @@ export default function Scan() {
         ) : detectedLabel ? (
           <>
             <Text style={styles.text}>Detected: {detectedLabel}</Text>
-            {candidates.length > 1 ? (
+            {!multiMode && candidates.length > 1 ? (
               <View
                 style={{
                   marginTop: 8,
@@ -349,14 +694,37 @@ export default function Scan() {
                       paddingVertical: 6,
                       paddingHorizontal: 10,
                       borderRadius: 16,
-                      backgroundColor:
-                        c === detectedLabel ? "#10b981" : "#1f2937",
-                      borderWidth: 1,
-                      borderColor: "#374151",
+                      backgroundColor: grocerySet.has(normalizeLabel(c))
+                        ? "#10b981"
+                        : "#1f2937",
+                      borderWidth: c === detectedLabel ? 2 : 1,
+                      borderColor: c === detectedLabel ? "#93c5fd" : "#374151",
                     }}
                   >
                     <Text style={{ color: "#fff", fontSize: 13 }}>{c}</Text>
                   </TouchableOpacity>
+                ))}
+              </View>
+            ) : null}
+            {multiMode && multiItems.length > 0 ? (
+              <View style={{ marginTop: 8, width: "100%" }}>
+                {multiItems.map((item, idx) => (
+                  <View
+                    key={`${item}-${idx}`}
+                    style={{
+                      marginVertical: 4,
+                      paddingVertical: 8,
+                      paddingHorizontal: 12,
+                      borderRadius: 10,
+                      backgroundColor: grocerySet.has(normalizeLabel(item))
+                        ? "#10b981"
+                        : "#1f2937",
+                      borderWidth: 1,
+                      borderColor: "#374151",
+                    }}
+                  >
+                    <Text style={{ color: "#fff", fontSize: 14 }}>{item}</Text>
+                  </View>
                 ))}
               </View>
             ) : null}
@@ -367,8 +735,23 @@ export default function Scan() {
           </>
         ) : (
           <>
-            <Text style={styles.text}>Point the camera at the item</Text>
-            <View style={{ height: 8 }} />
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                marginBottom: 10,
+              }}
+            >
+              <Text style={styles.text}>Point the camera</Text>
+              <View style={{ width: 20 }} />
+              <Text style={{ color: "#fff", fontSize: 14 }}>Multi-item</Text>
+              <Switch
+                value={multiMode}
+                onValueChange={setMultiMode}
+                style={{ marginLeft: 8 }}
+              />
+            </View>
             <TouchableOpacity
               onPress={captureAndDetect}
               style={{

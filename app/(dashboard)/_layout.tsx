@@ -67,20 +67,20 @@ export default function DashboardLayout() {
         }}
       />
       <Tabs.Screen
-        name="support"
-        options={{
-          title: "Support",
-          tabBarIcon: ({ color, size }) => (
-            <MaterialIcons name="support" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
         name="scan"
         options={{
           title: "Scan",
           tabBarIcon: ({ color, size }) => (
             <MaterialIcons name="camera" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="support"
+        options={{
+          title: "Support",
+          tabBarIcon: ({ color, size }) => (
+            <MaterialIcons name="support" size={size} color={color} />
           ),
         }}
       />
