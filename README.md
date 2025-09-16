@@ -61,8 +61,8 @@
 
 ==================================================================================================
 
-📲 Download APK 
-   https://drive.google.com/file/d/1z2UNeCIOKWCZp4BUhi1-Z-guQwS9OL0u/view?usp=drivesdk
+📲 APK
+   https://drive.google.com/file/d/1udvbGJZvpnTNjc-sRorVP_Mgl1kMiVt8/view?usp=drivesdk
 
    install and open
 
@@ -74,5 +74,10 @@
 ==================================================================================================
 
 🏡 Expo Build
-   https://expo.dev/accounts/harshana_47/projects/my-groceries/builds/b91a28c0-2719-46cf-b469-f261183ac7e7
+
+v1 :
+https://expo.dev/accounts/harshana_47/projects/my-groceries/builds/b91a28c0-2719-46cf-b469-f261183ac7e7
+
+v2 :
+https://expo.dev/accounts/harshana_22/projects/my-groceries/builds/ede1909e-0f99-4cac-9e5c-79445117d81a
 
