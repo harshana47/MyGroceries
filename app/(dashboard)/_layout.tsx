@@ -75,6 +75,15 @@ export default function DashboardLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="scan"
+        options={{
+          title: "Scan",
+          tabBarIcon: ({ color, size }) => (
+            <MaterialIcons name="camera" size={size} color={color} />
+          ),
+        }}
+      />
     </Tabs>
   );
 }

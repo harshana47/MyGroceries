@@ -299,6 +299,13 @@ export default function Home() {
               label="Support"
               onPress={() => router.push("/support")}
             />
+            <AnimatedCard
+              color="#0ea5e9"
+              gradientColors={["#0369a1", "#1e293b", "#0f172a"]}
+              icon="camera"
+              label="Scan"
+              onPress={() => router.push("/scan")}
+            />
           </View>
         </View>
       </Animated.View>
